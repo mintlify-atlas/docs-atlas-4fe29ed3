@@ -1,0 +1,128 @@
+{
+  "projectType": "saas",
+  "projectName": "TelemanAI",
+  "projectDescription": "AI-powered telemarketing platform with voice campaigns, contact management, and multi-channel communication capabilities",
+  "theme": "almond",
+  "primaryColor": "#3B82F6",
+  "lightColor": "#60A5FA",
+  "darkColor": "#2563EB",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/campaigns",
+              "features/contacts",
+              "features/dialer",
+              "features/voice-ai",
+              "features/sms-marketing",
+              "features/analytics"
+            ]
+          },
+          {
+            "group": "User Guides",
+            "pages": [
+              "guides/creating-campaigns",
+              "guides/managing-contacts",
+              "guides/sip-trunk-setup",
+              "guides/web-dialer",
+              "guides/departments-agents"
+            ]
+          },
+          {
+            "group": "Subscription & Billing",
+            "pages": [
+              "subscription/packages",
+              "subscription/payment-gateways",
+              "subscription/usage-limits"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Campaigns",
+            "pages": [
+              "api/campaigns/overview",
+              "api/campaigns/list",
+              "api/campaigns/start"
+            ]
+          },
+          {
+            "group": "Subscriptions",
+            "pages": [
+              "api/subscriptions/check-expiry",
+              "api/subscriptions/usage-limits"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "Third-Party Services",
+            "pages": [
+              "integrations/twilio",
+              "integrations/google-sheets",
+              "integrations/wordpress",
+              "integrations/woocommerce",
+              "integrations/perfex"
+            ]
+          },
+          {
+            "group": "Payment Gateways",
+            "pages": [
+              "integrations/payment-overview",
+              "integrations/stripe",
+              "integrations/paypal",
+              "integrations/razorpay"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "AI-powered voice campaigns with TwiML and audio support",
+    "Contact and group management with CSV import/export",
+    "Web-based dialer with SIP trunk integration",
+    "Multi-channel communication (voice, SMS, email)",
+    "Department-based agent management",
+    "Subscription packages with usage limits",
+    "Real-time analytics and call tracking",
+    "Interactive voice response (IVR) system",
+    "Multi-tenant SaaS architecture",
+    "Extensive payment gateway integrations"
+  ],
+  "publicApiSurface": [
+    "POST /api/check-expiry - Check subscription expiry status",
+    "GET /api/user-subscription-data - Get user subscription details",
+    "GET /api/user-emails-limit - Get email sending limits",
+    "GET /api/user-sms-limit - Get SMS sending limits",
+    "POST /api/user-email-limit-decrement - Decrement email limit",
+    "POST /api/user-sms-limit-decrement - Decrement SMS limit",
+    "GET /api/payment-histories - Get payment history",
+    "GET /api/user-campaign-list - List user campaigns",
+    "GET /api/audio-campaign/{campaign_id} - Start audio campaign"
+  ]
+}
