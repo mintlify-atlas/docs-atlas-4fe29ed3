@@ -1,0 +1,547 @@
+---
+title: Managing Contacts
+description: Complete guide to adding, organizing, and managing contacts in TelemanAI
+icon: 'address-book'
+---
+
+Contacts are the foundation of your telemarketing campaigns in TelemanAI. This guide covers everything you need to know about managing contacts and organizing them into groups.
+
+## Understanding Contacts
+
+Each contact in TelemanAI can store:
+
+- **Name**: Contact's full name (required)
+- **Phone Number**: International format with country code (required)
+- **Email**: Contact's email address
+- **Country**: Contact's country
+- **Gender**: Male, Female, or Other
+- **Date of Birth**: Contact's DOB
+- **Profession**: Contact's occupation or job title
+- **Groups**: Multiple group assignments
+
+## Adding Contacts Manually
+
+<Steps>
+  <Step title="Navigate to Contacts">
+    From your dashboard, go to **Dashboard → Contacts**
+  </Step>
+
+  <Step title="Click Add Contact">
+    Click the **Add New** or **Create Contact** button
+  </Step>
+
+  <Step title="Enter Contact Information">
+    Fill in the contact form:
+
+    **Required Fields:**
+    - **Name**: Enter the contact's full name
+    - **Phone Number**: Enter phone number with country code
+
+    **Optional Fields:**
+    - **Email**: Contact's email address
+    - **Country**: Select from dropdown
+    - **Gender**: Select gender
+    - **Date of Birth**: Choose date
+    - **Profession**: Enter occupation
+
+    <Tip>
+      Always include the country code in phone numbers (e.g., +1 for USA, +44 for UK)
+    </Tip>
+  </Step>
+
+  <Step title="Assign to Groups">
+    Select one or more groups to assign this contact:
+    - Check the boxes next to group names
+    - You can select multiple groups
+    - Groups can be created later if needed
+
+    <Note>
+      Contacts can belong to multiple groups, allowing flexible campaign targeting.
+    </Note>
+  </Step>
+
+  <Step title="Save Contact">
+    Click **Save** to create the contact. You'll see a success notification.
+  </Step>
+</Steps>
+
+## Phone Number Format
+
+### International Format Requirements
+
+All phone numbers must include the country code:
+
+```
+✓ Correct formats:
++1234567890
++442071234567
++919876543210
+
+✗ Incorrect formats:
+4567890 (missing country code)
+1-234-567-8900 (contains dashes)
+(123) 456-7890 (contains special characters)
+```
+
+<Warning>
+  Phone numbers without proper country codes may fail during campaigns. The system will automatically add a "+" prefix if not included.
+</Warning>
+
+## Importing Contacts via CSV
+
+Import hundreds or thousands of contacts at once using CSV files.
+
+<Steps>
+  <Step title="Prepare Your CSV File">
+    Create a CSV file with the following columns:
+
+    ```csv
+    name,phone,email,country,gender,dob,profession
+    John Doe,+1234567890,john@example.com,USA,Male,1990-01-15,Engineer
+    Jane Smith,+442071234567,jane@example.com,UK,Female,1985-05-20,Manager
+    ```
+
+    **Required Columns:**
+    - `name`: Contact name
+    - `phone`: Phone with country code
+
+    **Optional Columns:**
+    - `email`: Email address
+    - `country`: Country name
+    - `gender`: Male, Female, Other
+    - `dob`: Date in YYYY-MM-DD format
+    - `profession`: Job title or occupation
+  </Step>
+
+  <Step title="Navigate to Import">
+    Go to **Dashboard → Contacts** and click **Import** or **Import CSV**
+  </Step>
+
+  <Step title="Select CSV File">
+    - Click **Choose File**
+    - Select your prepared CSV file
+    - Verify the file size is reasonable (recommend under 10MB per file)
+  </Step>
+
+  <Step title="Upload and Process">
+    Click **Import** to start the upload:
+    - The file will be split into chunks for processing
+    - Import runs in the background via queue
+    - You'll receive a success notification
+
+    <Note>
+      Large imports are processed asynchronously. Check back in a few minutes for completion.
+    </Note>
+  </Step>
+
+  <Step title="Check Import Status">
+    Monitor the import progress:
+    - The system shows import status automatically
+    - Refresh the contacts page to see new contacts
+    - Check for any import errors in notifications
+  </Step>
+</Steps>
+
+### CSV Import Best Practices
+
+<AccordionGroup>
+  <Accordion title="File Preparation">
+    - Use UTF-8 encoding for international characters
+    - Remove duplicate phone numbers before import
+    - Validate phone numbers include country codes
+    - Keep file size under 10MB for faster processing
+    - Use consistent date formats (YYYY-MM-DD)
+  </Accordion>
+
+  <Accordion title="Data Quality">
+    - Clean data before import (remove invalid numbers)
+    - Standardize country names
+    - Verify email addresses are properly formatted
+    - Remove test data and placeholder entries
+  </Accordion>
+
+  <Accordion title="Handling Large Lists">
+    - Split very large files into multiple CSVs
+    - Import during off-peak hours
+    - Monitor system performance during import
+    - Allow time for background processing to complete
+  </Accordion>
+</AccordionGroup>
+
+## Managing Contact Groups
+
+Groups allow you to organize contacts for targeted campaigns.
+
+### Creating a Group
+
+<Steps>
+  <Step title="Navigate to Groups">
+    Go to **Dashboard → Groups** (or Contacts → Groups)
+  </Step>
+
+  <Step title="Click Create Group">
+    Click **Add New** or **Create Group** button
+  </Step>
+
+  <Step title="Enter Group Details">
+    Fill in the group information:
+
+    - **Name**: Descriptive group name (required)
+    - **Description**: Purpose or criteria for the group (required)
+    - **Status**: Toggle active/inactive
+
+    <Tip>
+      Use descriptive names like "Q1-2024-Prospects" or "Existing-Customers-East-Coast"
+    </Tip>
+  </Step>
+
+  <Step title="Save Group">
+    Click **Save** to create the group
+  </Step>
+</Steps>
+
+### Assigning Contacts to Groups
+
+#### Method 1: Individual Assignment
+
+<Steps>
+  <Step title="Go to Group Details">
+    Navigate to **Dashboard → Groups** and click on a group name
+  </Step>
+
+  <Step title="Click Assign Contacts">
+    Click the **Assign Contacts** button
+  </Step>
+
+  <Step title="Select Contacts">
+    - Browse the contact list
+    - Check boxes next to contacts to add
+    - Use search to find specific contacts
+  </Step>
+
+  <Step title="Save Assignment">
+    Click **Assign Selected** to add contacts to the group
+  </Step>
+</Steps>
+
+#### Method 2: Assign All Contacts
+
+<Steps>
+  <Step title="Open Group">
+    Navigate to **Dashboard → Groups** and click on a group
+  </Step>
+
+  <Step title="Assign All">
+    Click **Assign All Contacts** button
+  </Step>
+
+  <Step title="Confirm">
+    Confirm the action. All your contacts will be added to this group.
+
+    <Warning>
+      This will replace any existing contacts in the group with all contacts from your account.
+    </Warning>
+  </Step>
+</Steps>
+
+#### Method 3: During Contact Creation
+
+When adding or editing a contact:
+- Check group boxes in the **Groups** section
+- Contact will be automatically assigned
+- Multiple groups can be selected
+
+### Removing Contacts from Groups
+
+<Steps>
+  <Step title="Open Group">
+    Go to **Dashboard → Groups** and click on the group
+  </Step>
+
+  <Step title="Remove Contacts">
+    Choose removal method:
+
+    **Remove All:**
+    - Click **Remove All Contacts**
+    - Confirms and clears entire group
+
+    **Remove Individual:**
+    - Go to individual contact edit page
+    - Uncheck the group
+    - Save changes
+  </Step>
+</Steps>
+
+## Editing Contacts
+
+<Steps>
+  <Step title="Find Contact">
+    Navigate to **Dashboard → Contacts**
+
+    Use search to find specific contacts:
+    - Search by name
+    - Search by phone number
+  </Step>
+
+  <Step title="Open Contact">
+    Click on the contact name to open the edit page
+  </Step>
+
+  <Step title="Modify Information">
+    Update any contact fields:
+    - Personal information
+    - Phone number
+    - Group assignments
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Update** to save your changes
+  </Step>
+</Steps>
+
+## Searching and Filtering Contacts
+
+### Quick Search
+
+<Steps>
+  <Step title="Access Contact Search">
+    Go to **Dashboard → Contacts**
+  </Step>
+
+  <Step title="Use Search Bar">
+    Enter search criteria in the search box:
+    - Search by name
+    - Search by phone number
+    - Results appear as you type
+  </Step>
+
+  <Step title="View Results">
+    The contact list will filter to show matching results
+  </Step>
+</Steps>
+
+### AJAX Contact Lookup
+
+The system also provides real-time contact lookup:
+
+- Used in dialer and campaign interfaces
+- Searches by caller number automatically
+- Displays contact info during active calls
+
+## Exporting Contacts
+
+Export your contact list to CSV for backup or external use.
+
+<Steps>
+  <Step title="Navigate to Contacts">
+    Go to **Dashboard → Contacts**
+  </Step>
+
+  <Step title="Click Export">
+    Click the **Export** or **Export CSV** button
+  </Step>
+
+  <Step title="Download File">
+    The system generates a CSV file named `contacts.csv`:
+    - Contains all your contacts
+    - Includes all contact fields
+    - Can be opened in Excel or Google Sheets
+  </Step>
+</Steps>
+
+<Tip>
+  Regularly export contacts as a backup strategy.
+</Tip>
+
+## Deleting Contacts
+
+<Warning>
+  Deleting contacts is permanent and will also remove:
+  - Group assignments
+  - Campaign voice records
+  - Call history related to this contact
+</Warning>
+
+<Steps>
+  <Step title="Find Contact">
+    Navigate to **Dashboard → Contacts** and locate the contact
+  </Step>
+
+  <Step title="Open Contact Details">
+    Click on the contact name
+  </Step>
+
+  <Step title="Delete Contact">
+    Click the **Delete** button
+  </Step>
+
+  <Step title="Confirm Deletion">
+    Confirm the deletion when prompted
+  </Step>
+</Steps>
+
+## Managing Groups
+
+### Editing Groups
+
+<Steps>
+  <Step title="Navigate to Groups">
+    Go to **Dashboard → Groups**
+  </Step>
+
+  <Step title="Select Group">
+    Click on the group name to edit
+  </Step>
+
+  <Step title="Modify Details">
+    Update group information:
+    - Name
+    - Description
+    - Status (active/inactive)
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Update** to save
+  </Step>
+</Steps>
+
+### Deleting Groups
+
+<Warning>
+  Deleting a group will:
+  - Remove all contact assignments from the group
+  - Set group_id to null in related campaigns
+  - Set group_id to null in campaign schedules
+  - NOT delete the contacts themselves
+</Warning>
+
+<Steps>
+  <Step title="Navigate to Groups">
+    Go to **Dashboard → Groups**
+  </Step>
+
+  <Step title="Select Group">
+    Find the group you want to delete
+  </Step>
+
+  <Step title="Delete">
+    Click the **Delete** button next to the group
+  </Step>
+
+  <Step title="Confirm">
+    Confirm the deletion. The group and its assignments will be removed.
+  </Step>
+</Steps>
+
+## Contact Data Fields Reference
+
+| Field | Type | Required | Format | Notes |
+|-------|------|----------|--------|-------|
+| Name | Text | Yes | Any text | Contact's full name |
+| Phone | Text | Yes | +[country code][number] | International format |
+| Email | Text | No | email@domain.com | Valid email format |
+| Country | Text | No | Country name | Free text or dropdown |
+| Gender | Select | No | Male, Female, Other | Optional demographic |
+| DOB | Date | No | YYYY-MM-DD | Date of birth |
+| Profession | Text | No | Any text | Job title or occupation |
+| Groups | Multiple | No | Group IDs | Can belong to multiple groups |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Data Organization">
+    - Create groups based on customer segments
+    - Use consistent naming conventions for groups
+    - Regularly review and clean contact data
+    - Remove duplicate contacts
+    - Archive old or inactive contacts
+  </Accordion>
+
+  <Accordion title="Data Quality">
+    - Always use international phone format
+    - Validate phone numbers before importing
+    - Keep contact information up-to-date
+    - Remove bounced or invalid numbers
+    - Maintain accurate email addresses
+  </Accordion>
+
+  <Accordion title="Group Management">
+    - Create specific groups for each campaign type
+    - Use descriptive group names
+    - Document group criteria in descriptions
+    - Regularly audit group memberships
+    - Remove inactive groups
+  </Accordion>
+
+  <Accordion title="Compliance">
+    - Respect do-not-call lists
+    - Remove contacts who request removal
+    - Maintain opt-out records
+    - Follow GDPR and local regulations
+    - Document consent where required
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="CSV Import Not Working">
+    **Problem**: CSV import fails or contacts don't appear
+
+    **Solution**:
+    - Verify CSV format matches required columns
+    - Check file encoding is UTF-8
+    - Ensure phone numbers have country codes
+    - Wait for background processing to complete
+    - Check import status endpoint
+    - Review error notifications
+  </Accordion>
+
+  <Accordion title="Phone Numbers Not Calling">
+    **Problem**: Campaigns fail for certain contacts
+
+    **Solution**:
+    - Verify phone number format (+[country code][number])
+    - Remove spaces and special characters
+    - Check country code is valid
+    - Test number manually in web dialer
+    - Verify number is not blocked
+  </Accordion>
+
+  <Accordion title="Duplicate Contacts">
+    **Problem**: Same contact appears multiple times
+
+    **Solution**:
+    - Search for duplicates by phone number
+    - Manually merge contact information
+    - Delete duplicate entries
+    - Use data cleaning before import
+  </Accordion>
+
+  <Accordion title="Cannot Delete Contact">
+    **Problem**: Error when attempting to delete contact
+
+    **Solution**:
+    - Check if contact is in active campaign
+    - Wait for campaigns to complete
+    - Remove from all groups first
+    - Contact support if issue persists
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Creating Campaigns" icon="bullhorn" href="/guides/creating-campaigns">
+    Learn how to create campaigns using your contact groups
+  </Card>
+  <Card title="Web Dialer" icon="phone" href="/guides/web-dialer">
+    Make individual calls to contacts
+  </Card>
+  <Card title="Campaigns" icon="bullhorn" href="/features/campaigns">
+    Create campaigns with your contacts
+  </Card>
+  <Card title="CSV Import Guide" icon="file-csv" href="/guides/managing-contacts#importing-contacts-from-csv">
+    Learn about bulk contact import
+  </Card>
+</CardGroup>

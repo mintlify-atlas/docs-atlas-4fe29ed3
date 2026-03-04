@@ -1,0 +1,615 @@
+---
+title: Departments & Agents
+description: Organize your team with departments and manage agent assignments in TelemanAI
+icon: 'users'
+---
+
+Departments in TelemanAI allow you to organize agents into teams, assign providers, and configure specialized call routing. This guide covers setting up departments, managing agents, and configuring department-based workflows.
+
+## Understanding Departments
+
+Departments serve multiple purposes in TelemanAI:
+
+- **Team Organization**: Group agents by function (Sales, Support, etc.)
+- **Provider Assignment**: Assign specific Twilio providers to departments
+- **Call Routing**: Route inbound calls to specific departments
+- **IVR Integration**: Create interactive voice response menus
+- **Reporting**: Track metrics by department
+- **Access Control**: Manage permissions at department level
+
+## Department Types
+
+TelemanAI supports three types of departments:
+
+### Outbound Departments
+- Designed for outbound calling campaigns
+- Agents make calls to contacts
+- Used with voice campaigns and web dialer
+- Tracks outbound call metrics
+
+### Inbound Departments
+- Handle incoming customer calls
+- Routes calls to available agents
+- Queue management for busy times
+- Tracks inbound call metrics
+
+### IVR Departments
+- Interactive Voice Response systems
+- Automated menu navigation
+- Custom call flows
+- Self-service options for callers
+
+## Creating a Department
+
+<Steps>
+  <Step title="Navigate to Departments">
+    From your dashboard, go to **Dashboard → Departments**
+  </Step>
+
+  <Step title="Click Add New">
+    Click the **Add New** or **Create Department** button
+  </Step>
+
+  <Step title="Enter Department Name">
+    Provide a descriptive name for the department:
+    - Example: "Sales Team", "Customer Support", "Technical Support"
+    - Use clear, recognizable names
+    - Name is used in routing and reporting
+
+    <Tip>
+      Use naming conventions that reflect function and location, like "Sales-East-Coast" or "Support-Tier-1"
+    </Tip>
+  </Step>
+
+  <Step title="Select Department Type">
+    Choose the operation type:
+
+    **Outbound**
+    - For making outbound calls
+    - Used in campaigns and manual dialing
+    - Tracks outbound metrics
+
+    **Inbound**
+    - For receiving incoming calls
+    - Automatic call distribution
+    - Queue management
+
+    **IVR**
+    - For interactive voice menus
+    - Custom call flows
+    - Redirects to IVR configuration on save
+
+    <Note>
+      You can only select one type per department. Create separate departments for different functions.
+    </Note>
+  </Step>
+
+  <Step title="Assign Providers">
+    Select one or more Twilio providers for this department:
+    - Multiple providers can be selected
+    - Providers must be configured and active
+    - Department calls will use these providers
+    - Load balancing across providers (if multiple)
+
+    <Warning>
+      At least one provider is required. Ensure providers have sufficient balance and active status.
+    </Warning>
+  </Step>
+
+  <Step title="Set Department Status">
+    Toggle the **Active** status:
+    - **Active**: Department can receive/make calls
+    - **Inactive**: Department is disabled
+
+    Use inactive status for:
+    - Testing departments before launch
+    - Temporarily disabling during off-hours
+    - Archiving old departments
+  </Step>
+
+  <Step title="Save Department">
+    Click **Save** to create the department:
+    - Department is created in database
+    - Providers are linked
+    - If IVR type, redirects to IVR configuration
+    - Success notification appears
+  </Step>
+</Steps>
+
+## Managing Department Providers
+
+Providers determine which Twilio credentials and phone numbers are used for department calls.
+
+### Assigning Multiple Providers
+
+You can assign multiple providers to a department for:
+- **Load balancing**: Distribute calls across providers
+- **Redundancy**: Fallback if primary provider fails
+- **Cost optimization**: Route calls through cheapest provider
+- **Geographic routing**: Use local numbers per region
+
+### Provider Selection Logic
+
+When department has multiple providers:
+1. System selects active providers only
+2. Checks provider balance
+3. Verifies hourly quota availability
+4. Selects based on configuration or first available
+
+<Tip>
+  Regularly monitor provider balances to avoid call failures during campaigns.
+</Tip>
+
+## Configuring Inbound Call Routing
+
+Inbound departments route incoming calls to available agents.
+
+### Setting Up Inbound Routing
+
+<Steps>
+  <Step title="Create Inbound Department">
+    Follow department creation steps, selecting **Inbound** as the type
+  </Step>
+
+  <Step title="Assign Providers">
+    Select providers with inbound phone numbers configured
+  </Step>
+
+  <Step title="Add Agents to Department">
+    Assign agents who will handle inbound calls (see Agent Management section)
+  </Step>
+
+  <Step title="Configure SIP Trunk (Optional)">
+    If using SIP Trunks:
+    - Go to **Dashboard → SIP Trunks**
+    - Edit your SIP Trunk
+    - Assign this inbound department
+    - Calls to SIP domain will route to this department
+  </Step>
+</Steps>
+
+### Inbound Call Flow
+
+When a call arrives at an inbound department:
+
+1. **Call arrives** at Twilio number or SIP domain
+2. **Department identified** from provider or SIP configuration
+3. **Agent availability checked** in department
+4. **If agent available**:
+   - Call routes to agent's web dialer
+   - Agent receives notification
+   - Call connects
+5. **If no agents available**:
+   - Call enters queue
+   - Caller hears hold message
+   - System announces queue position
+   - Retries when agent becomes available
+
+## Setting Up Outbound Departments
+
+Outbound departments are used for campaigns and manual outbound calling.
+
+<Steps>
+  <Step title="Create Outbound Department">
+    Follow department creation steps, selecting **Outbound** as the type
+  </Step>
+
+  <Step title="Assign Providers">
+    Select providers with sufficient balance for outbound calling
+  </Step>
+
+  <Step title="Add Agents">
+    Assign agents who will make outbound calls
+  </Step>
+
+  <Step title="Configure Campaigns">
+    Use this department in campaigns:
+    - Department agents can run voice campaigns
+    - Calls use department providers
+    - Metrics tracked by department
+  </Step>
+</Steps>
+
+## Configuring IVR Departments
+
+IVR (Interactive Voice Response) departments provide automated call menus.
+
+<Steps>
+  <Step title="Create IVR Department">
+    Follow department creation steps, selecting **IVR** as the type
+  </Step>
+
+  <Step title="Automatic Redirect">
+    After saving, system automatically redirects to IVR configuration page
+  </Step>
+
+  <Step title="Design IVR Flow">
+    On the IVR configuration page:
+    - Create menu options (Press 1 for Sales, Press 2 for Support)
+    - Configure routing for each option
+    - Set default/timeout behavior
+    - Add voice prompts or text-to-speech
+  </Step>
+
+  <Step title="Test IVR">
+    Test your IVR configuration:
+    - Call the assigned phone number
+    - Navigate through menu options
+    - Verify routing is correct
+    - Test timeout and invalid input handling
+  </Step>
+</Steps>
+
+<Note>
+  IVR configuration uses a visual flow builder. Detailed IVR setup is covered in the IVR documentation.
+</Note>
+
+## Managing Agents
+
+Agents are users assigned to departments who handle calls.
+
+### Understanding Agent Roles
+
+Agents in TelemanAI:
+- Make and receive calls through web dialer
+- Run voice campaigns
+- Handle inbound calls routed to their department
+- Track call history and metrics
+- Update contact information
+
+### Adding Agents to Departments
+
+Agents are assigned to departments through the department agent relationship:
+
+<Steps>
+  <Step title="Navigate to Department">
+    Go to **Dashboard → Departments** and select a department
+  </Step>
+
+  <Step title="Access Agent Management">
+    Look for **Agents** or **Manage Agents** section
+  </Step>
+
+  <Step title="Add Agent">
+    Select users to add as agents:
+    - Choose from existing user accounts
+    - Multiple agents can be assigned
+    - Agents can belong to multiple departments
+  </Step>
+
+  <Step title="Save Assignments">
+    Click **Save** to assign agents to the department
+  </Step>
+</Steps>
+
+### Agent Availability
+
+For inbound call handling, agents must set their availability:
+
+<Steps>
+  <Step title="Agent Logs In">
+    Agent logs into TelemanAI account
+  </Step>
+
+  <Step title="Access Dialerpad">
+    Agent navigates to **Dashboard → Inbound Call** (Dialerpad)
+  </Step>
+
+  <Step title="Agent Marked Available">
+    Opening the dialerpad marks agent as available:
+    - System updates agent availability status
+    - Agent can now receive inbound calls
+    - Status visible to routing system
+  </Step>
+
+  <Step title="Receive Calls">
+    While dialerpad is open:
+    - Inbound calls route to available agents
+    - Agent receives browser notification
+    - Call connects automatically or requires answer click
+  </Step>
+</Steps>
+
+<Warning>
+  Agents must keep the dialerpad page open to remain available for inbound calls. Closing the page marks them as unavailable.
+</Warning>
+
+### Removing Agents from Departments
+
+<Steps>
+  <Step title="Navigate to Department">
+    Go to **Dashboard → Departments** and select the department
+  </Step>
+
+  <Step title="Access Agent List">
+    View the list of assigned agents
+  </Step>
+
+  <Step title="Remove Agent">
+    Click **Remove** or delete icon next to agent name
+  </Step>
+
+  <Step title="Confirm Removal">
+    Confirm the action. Agent is removed from department.
+  </Step>
+</Steps>
+
+## Agent Permissions
+
+Agent permissions are typically managed at the user account level:
+
+- **View permissions**: Access to contacts, campaigns, call history
+- **Call permissions**: Ability to make outbound calls
+- **Campaign permissions**: Run voice campaigns
+- **Department access**: Which departments agent belongs to
+
+<Tip>
+  Use role-based access control at the user level, and departments for team organization.
+</Tip>
+
+## Department-Based Call Queue
+
+When all agents in a department are busy, calls enter a queue.
+
+### Queue Behavior
+
+1. **Call arrives** when no agents available
+2. **Queue entry**: Call is added to department queue
+3. **Hold message**: Caller hears "All agents are busy..."
+4. **Position announcement**: "You are number X in the queue"
+5. **Periodic updates**: System repeats message every few seconds
+6. **Agent available**: Call routes to first available agent
+7. **Queue exit**: Caller connects or hangs up
+
+### Queue Management Functions
+
+The system provides functions for queue management:
+
+- `moveToQueue()`: Add caller to queue
+- `removeFromQueue()`: Remove caller when connected
+- `getCallerQueueSerialNumber()`: Get caller's queue position
+- `checkAgentAvailability()`: Check if agents are available
+
+## Editing Departments
+
+<Steps>
+  <Step title="Navigate to Departments">
+    Go to **Dashboard → Departments**
+  </Step>
+
+  <Step title="Select Department">
+    Click on the department name to edit
+  </Step>
+
+  <Step title="Modify Settings">
+    Update any department configuration:
+    - Name
+    - Department type
+    - Provider assignments
+    - Active status
+  </Step>
+
+  <Step title="Update Providers">
+    Change provider assignments:
+    - Existing providers are removed first
+    - New providers are assigned
+    - Both actions happen in a database transaction
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Update** to save your modifications:
+    - Changes apply immediately
+    - Cache is cleared automatically
+    - If IVR type, redirects to IVR config
+  </Step>
+</Steps>
+
+## Deleting Departments
+
+<Warning>
+  Deleting a department will:
+  - Remove all department-provider relationships
+  - Remove all department-agent assignments
+  - NOT delete the agents themselves
+  - NOT delete associated providers
+  - Cannot be undone
+</Warning>
+
+<Steps>
+  <Step title="Navigate to Departments">
+    Go to **Dashboard → Departments**
+  </Step>
+
+  <Step title="Select Department">
+    Find the department to delete
+  </Step>
+
+  <Step title="Click Delete">
+    Click the **Delete** button next to the department
+  </Step>
+
+  <Step title="Confirm Deletion">
+    Confirm the action when prompted:
+    - Department and relationships are deleted
+    - Database transaction ensures consistency
+    - Cache is cleared
+  </Step>
+</Steps>
+
+## Department Reporting and Analytics
+
+Track department performance through various metrics:
+
+### Available Metrics
+
+- **Call volume**: Total calls by department
+- **Average handle time**: Average call duration
+- **Agent utilization**: Percentage of time agents are on calls
+- **Queue statistics**: Average wait time, abandoned calls
+- **Conversion rates**: For outbound departments
+- **Customer satisfaction**: If post-call surveys enabled
+
+### Accessing Reports
+
+1. Navigate to **Dashboard → Analytics**
+2. Filter by department
+3. Select date range
+4. View metrics and charts
+5. Export reports as needed
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Department Structure">
+    - Create departments aligned with business functions
+    - Keep department sizes manageable (5-15 agents optimal)
+    - Use clear, descriptive names
+    - Document department purposes and workflows
+    - Review and optimize department structure quarterly
+  </Accordion>
+
+  <Accordion title="Agent Management">
+    - Cross-train agents across departments for flexibility
+    - Monitor agent availability and utilization
+    - Set clear expectations for availability hours
+    - Provide agents with necessary tools and information
+    - Regular training and feedback sessions
+  </Accordion>
+
+  <Accordion title="Provider Assignment">
+    - Assign multiple providers for redundancy
+    - Monitor provider balances regularly
+    - Test provider connectivity before busy periods
+    - Use geographically appropriate providers
+    - Document provider assignments and purposes
+  </Accordion>
+
+  <Accordion title="Inbound Call Handling">
+    - Ensure adequate agent coverage during business hours
+    - Monitor queue times and adjust staffing
+    - Set up overflow routing for busy periods
+    - Use IVR for off-hours or overflow
+    - Track and optimize average handle time
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    - Review department metrics weekly
+    - Identify bottlenecks in call routing
+    - Optimize agent schedules based on call volume
+    - Implement skills-based routing where applicable
+    - Regular testing of call flows and routing
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Inbound Calls Not Routing">
+    **Problem**: Calls to department not connecting to agents
+
+    **Solution**:
+    - Verify department has assigned agents
+    - Check at least one agent is available (dialerpad open)
+    - Ensure department status is Active
+    - Verify provider phone number is correct
+    - Check provider connection is working
+    - Review call logs for routing errors
+  </Accordion>
+
+  <Accordion title="Cannot Create Department">
+    **Problem**: Error when saving department
+
+    **Solution**:
+    - Ensure name is filled in (required)
+    - Select at least one provider (required)
+    - Choose department type (required)
+    - Check for duplicate department names
+    - Verify providers exist and are active
+    - Check database connection
+  </Accordion>
+
+  <Accordion title="Agents Not Receiving Calls">
+    **Problem**: Specific agents never receive inbound calls
+
+    **Solution**:
+    - Verify agent is assigned to department
+    - Check agent has opened dialerpad page
+    - Ensure agent hasn't denied microphone permissions
+    - Check agent's web dialer is connected
+    - Verify agent account is active
+    - Test with different browser
+  </Accordion>
+
+  <Accordion title="All Agents Busy (Queue Issues)">
+    **Problem**: Calls always go to queue even when agents are free
+
+    **Solution**:
+    - Check agent availability status in database
+    - Verify dialerpad page is active for agents
+    - Ensure agents are in correct department
+    - Check for JavaScript errors in agent browsers
+    - Verify queue logic is working correctly
+    - Review agent_is_available table
+  </Accordion>
+
+  <Accordion title="Cannot Delete Department">
+    **Problem**: Error when attempting to delete department
+
+    **Solution**:
+    - Check for active campaigns using department
+    - Verify no active calls in department
+    - Remove all agents first (if required)
+    - Check database constraints
+    - Review error message for specifics
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Configuration
+
+### Skills-Based Routing
+
+For advanced routing, you can implement skills-based routing:
+
+1. Define agent skills or expertise levels
+2. Tag contacts or campaigns with required skills
+3. Route calls to agents with matching skills
+4. Fallback to general agents if no skilled agents available
+
+### Department Hierarchies
+
+Organize departments in hierarchies:
+
+- **Parent department**: Sales
+  - **Child department**: Inside Sales
+  - **Child department**: Field Sales
+
+Use hierarchies for:
+- Reporting rollups
+- Overflow routing
+- Skill escalation
+
+### Load Balancing Strategies
+
+Implement load balancing across agents:
+
+- **Round-robin**: Distribute calls evenly
+- **Least-busy**: Route to agent with fewest active calls
+- **Skills-based**: Route based on agent expertise
+- **Performance-based**: Route to highest-performing agents
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Web Dialer" icon="phone" href="/guides/web-dialer">
+    Learn how agents use the web dialer
+  </Card>
+  <Card title="SIP Trunk Setup" icon="network-wired" href="/guides/sip-trunk-setup">
+    Configure SIP Trunks for department routing
+  </Card>
+  <Card title="Creating Campaigns" icon="bullhorn" href="/guides/creating-campaigns">
+    Use departments in campaigns
+  </Card>
+  <Card title="SIP Trunk Setup" icon="network-wired" href="/guides/sip-trunk-setup">
+    Configure SIP trunks for calling
+  </Card>
+</CardGroup>

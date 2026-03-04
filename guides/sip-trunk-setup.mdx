@@ -1,0 +1,629 @@
+---
+title: SIP Trunk Setup
+description: Configure SIP Trunks for TelemanAI to connect with Twilio's SIP Trunking service
+icon: 'network-wired'
+---
+
+SIP Trunking enables your TelemanAI system to connect to the public switched telephone network (PSTN) through Internet Protocol (IP) connections, replacing traditional telephone lines. This guide covers complete SIP Trunk setup and integration.
+
+## Overview
+
+SIP Trunk integration with Twilio allows you to:
+
+- Route inbound calls from SIP Trunks to departments or agents
+- Make outbound calls through SIP domains
+- Configure IP-based or credential-based authentication
+- Use SIP Trunks with the Web Dialer
+- Manage SIP security settings and voice endpoints
+- Test SIP Trunk connections in real-time
+
+## Prerequisites
+
+Before setting up SIP Trunks, ensure you have:
+
+<Steps>
+  <Step title="Twilio Account">
+    - Active Twilio account with SIP Trunking enabled
+    - Your Twilio Account SID
+    - Your Twilio Auth Token
+  </Step>
+
+  <Step title="Network Configuration">
+    - Properly configured network environment that allows SIP traffic
+    - Open SIP ports (5060 for SIP, 5061 for SIPS)
+    - Firewall configured to allow Twilio IP ranges
+  </Step>
+
+  <Step title="Authentication Setup">
+    Choose your authentication method:
+
+    **For IP-based authentication:**
+    - Static IP addresses for your SIP clients
+    - IP whitelist configuration
+
+    **For credential-based authentication:**
+    - SIP clients that support SIP authentication
+    - Secure password storage
+  </Step>
+</Steps>
+
+## Environment Configuration
+
+First, configure your TelemanAI environment for SIP Trunking.
+
+<Steps>
+  <Step title="Edit Environment File">
+    Open your `.env` file and add the following configuration:
+
+    ```bash
+    # Twilio SIP Trunk Configuration
+    SIP_TRUNK=YES
+    TWILIO_ACCOUNT_SID=your_twilio_account_sid
+    TWILIO_AUTH_TOKEN=your_twilio_auth_token
+    TWILIO_APP_SID=your_twilio_app_sid
+    TWILIO_NUMBER=your_twilio_phone_number
+    TWILIO_SIP_ENABLED=true
+    TWILIO_SIP_DEFAULT_DOMAIN=your-default-domain.sip.twilio.com
+    ```
+
+    <Warning>
+      Replace placeholder values with your actual Twilio credentials. Never commit credentials to version control.
+    </Warning>
+  </Step>
+
+  <Step title="Run Database Migration">
+    Execute the migration to create necessary database tables:
+
+    ```bash
+    php artisan migrate
+    ```
+
+    This creates the `sip_trunks` table and related structures.
+  </Step>
+
+  <Step title="Add Menu Integration">
+    Add the SIP Trunk menu item to your navigation:
+
+    ```bash
+    php artisan teleman:add-sip-trunk-menu
+    ```
+  </Step>
+
+  <Step title="Clear Cache">
+    Clear application cache to apply changes:
+
+    ```bash
+    php artisan cache:clear
+    ```
+  </Step>
+</Steps>
+
+## Creating Your First SIP Trunk
+
+<Steps>
+  <Step title="Navigate to SIP Trunks">
+    From your dashboard, go to **Dashboard → SIP Trunks**
+  </Step>
+
+  <Step title="Click Add New">
+    Click the **Add New** button to open the SIP Trunk creation form
+  </Step>
+
+  <Step title="Enter Basic Information">
+    Fill in the required fields:
+
+    **Name** (required)
+    - A descriptive name for the SIP Trunk
+    - Example: "Main Office SIP Trunk" or "Remote Workers SIP"
+
+    **SIP Domain** (required)
+    - Your Twilio SIP domain
+    - Format: `your-domain.sip.twilio.com`
+    - Must match your Twilio console configuration
+
+    **Friendly Name** (optional)
+    - Additional descriptive name
+    - Used for easier identification
+  </Step>
+
+  <Step title="Configure Department Routing">
+    **Department** (optional)
+    - Select a department for automatic call routing
+    - Incoming calls will route to this department
+    - Leave blank to route to default agent
+
+    <Tip>
+      Department routing allows automatic distribution of inbound SIP calls to specific teams.
+    </Tip>
+  </Step>
+
+  <Step title="Select Authentication Type">
+    Choose your authentication method:
+
+    **IP Access Control List (IP ACL)**
+    - Best for fixed office locations
+    - More secure for controlled environments
+    - No credential management needed
+
+    **Credential List**
+    - Best for remote workers
+    - Supports dynamic IP addresses
+    - Requires username/password management
+  </Step>
+
+  <Step title="Configure Voice Settings">
+    **Voice URL** (optional)
+    - URL for handling inbound calls
+    - Defaults to: `https://your-domain.com/sip/inbound`
+    - Can be customized for special routing
+
+    **Voice Method**
+    - HTTP method for voice URL
+    - Choose: GET or POST
+    - Recommended: POST
+
+    <Note>
+      The default voice URL works for most use cases. Only customize if you have special routing requirements.
+    </Note>
+  </Step>
+
+  <Step title="Configure Security Options">
+    **Active**
+    - Toggle to enable/disable the SIP Trunk
+    - Only active SIP Trunks will route calls
+
+    **Secure**
+    - Enable secure SIP (SIPS)
+    - Uses TLS encryption
+    - Recommended for production
+
+    <Warning>
+      Always use secure SIP (SIPS) in production environments to encrypt call signaling.
+    </Warning>
+  </Step>
+</Steps>
+
+## Authentication Methods
+
+### IP Access Control Lists (IP ACL)
+
+IP-based authentication restricts SIP connections to specified IP addresses.
+
+#### When to Use IP ACL
+
+- Office environments with static IP addresses
+- Higher security requirements
+- Situations where credential management is difficult
+- Dedicated SIP infrastructure
+
+#### Configuring IP ACL
+
+<Steps>
+  <Step title="Select IP ACL Authentication">
+    In the SIP Trunk form, select **IP Access Control List** as the authentication type
+  </Step>
+
+  <Step title="Add IP Addresses">
+    Click **Add IP Address** to add allowed IPs:
+
+    **IP Address** (required)
+    - Enter the static IP address
+    - Format: `203.0.113.1` or `2001:db8::1`
+    - IPv4 or IPv6 supported
+
+    **Friendly Name** (optional)
+    - Descriptive label for the IP
+    - Example: "Office Router" or "PBX Server"
+  </Step>
+
+  <Step title="Add Multiple IPs">
+    Click **Add IP Address** again to add more IPs:
+    - One IP per row
+    - Can add unlimited IP addresses
+    - Remove IPs using the trash icon
+  </Step>
+
+  <Step title="Save Configuration">
+    Click **Save** to create the SIP Trunk with IP ACL authentication
+  </Step>
+</Steps>
+
+<Tip>
+  Add all potential source IPs for your SIP clients, including backup connections and failover addresses.
+</Tip>
+
+### Credential-Based Authentication
+
+Credential-based authentication uses username/password pairs.
+
+#### When to Use Credentials
+
+- Remote workers with dynamic IP addresses
+- Multiple users sharing the same SIP Trunk
+- Mobile or traveling workers
+- Third-party SIP clients
+
+#### Configuring Credentials
+
+<Steps>
+  <Step title="Select Credential List">
+    In the SIP Trunk form, select **Credential List** as the authentication type
+  </Step>
+
+  <Step title="Add Credentials">
+    Click **Add Credential** to create username/password pairs:
+
+    **Username** (required)
+    - SIP authentication username
+    - Must be unique per SIP Trunk
+    - Use alphanumeric characters
+
+    **Password** (required)
+    - Strong password for SIP authentication
+    - Minimum 12 characters recommended
+    - Use mix of letters, numbers, symbols
+  </Step>
+
+  <Step title="Add Multiple Credentials">
+    Click **Add Credential** to add more users:
+    - One credential pair per row
+    - Each user gets unique credentials
+    - Remove using the trash icon
+  </Step>
+
+  <Step title="Save Configuration">
+    Click **Save** to create the SIP Trunk with credential authentication
+  </Step>
+</Steps>
+
+<Warning>
+  Use strong passwords for credential authentication. Regularly rotate credentials for security.
+</Warning>
+
+## Inbound Call Handling
+
+When a call arrives through your SIP Trunk, TelemanAI processes it automatically.
+
+### Call Flow
+
+1. **Call Arrives**: Twilio receives call on your SIP domain
+2. **Domain Identification**: System identifies SIP domain from incoming request
+3. **SIP Trunk Lookup**: System finds matching active SIP Trunk in database
+4. **Department Routing**: 
+   - If SIP Trunk has department assigned → route to department
+   - If no department → route to default agent
+5. **Call Handling**: Agent receives call in web dialer
+
+### Configuring Department Routing
+
+<Steps>
+  <Step title="Edit SIP Trunk">
+    Navigate to **Dashboard → SIP Trunks** and click on your SIP Trunk
+  </Step>
+
+  <Step title="Select Department">
+    Choose the desired department from the dropdown:
+    - Only active departments appear
+    - Department must have agents assigned
+    - Agents must be available to receive calls
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Update** to save the department assignment
+  </Step>
+</Steps>
+
+<Note>
+  All incoming calls to this SIP Trunk will now route to agents in the selected department.
+</Note>
+
+## SIP Trunk and Web Dialer Integration
+
+SIP Trunks can be used with the Web Dialer for outbound calling.
+
+### Enabling SIP Trunk in Web Dialer
+
+<Steps>
+  <Step title="Create Active SIP Trunk">
+    Ensure you have at least one active SIP Trunk:
+    - Navigate to **Dashboard → SIP Trunks**
+    - Verify status is **Active**
+    - Test connection is successful
+  </Step>
+
+  <Step title="Open Web Dialer">
+    Navigate to **Dashboard → Web Dialer**
+  </Step>
+
+  <Step title="Select SIP Trunk">
+    In the Web Dialer interface:
+    - Look for **SIP Trunk** dropdown
+    - Select your SIP Trunk from the list
+    - SIP Trunk info panel displays configuration
+  </Step>
+
+  <Step title="Make Calls">
+    With SIP Trunk selected:
+    - Enter phone number to call
+    - Click **Call** button
+    - Calls route through your SIP domain
+    - Status shows "Calling via SIP Trunk"
+  </Step>
+</Steps>
+
+### Benefits of SIP Trunk Calling
+
+- **Cost Efficiency**: Potentially lower call costs through SIP providers
+- **Flexibility**: Multiple routing options per user
+- **Scalability**: Support for multiple SIP domains
+- **Department Control**: SIP Trunks can be assigned to departments
+
+## Testing SIP Trunk Connection
+
+<Steps>
+  <Step title="Navigate to SIP Trunk">
+    Go to **Dashboard → SIP Trunks** and click on your SIP Trunk
+  </Step>
+
+  <Step title="Click Test Connection">
+    Click the **Test Connection** button on the SIP Trunk details page
+  </Step>
+
+  <Step title="Review Results">
+    The system will:
+    - Verify Twilio SIP domain is accessible
+    - Check authentication configuration
+    - Validate voice URL endpoint
+    - Display success or error message
+
+    <Tip>
+      Test connections after any configuration changes to ensure proper setup.
+    </Tip>
+  </Step>
+</Steps>
+
+### Additional Testing Methods
+
+#### SIP Client Testing
+
+Test with SIP clients like Zoiper, X-Lite, or Linphone:
+
+1. Configure SIP client with your credentials:
+   - **Domain**: your-domain.sip.twilio.com
+   - **Username**: (from credential list)
+   - **Password**: (from credential list)
+
+2. Register the SIP client
+3. Make a test call
+4. Verify call routing and audio quality
+
+#### Automated Tests
+
+Run the test suite:
+
+```bash
+php artisan test --filter=SipTrunk
+```
+
+## Managing SIP Trunks
+
+### Viewing SIP Trunk Details
+
+<Steps>
+  <Step title="Access SIP Trunk List">
+    Navigate to **Dashboard → SIP Trunks**
+  </Step>
+
+  <Step title="View Details">
+    Click on a SIP Trunk name to view:
+    - Basic configuration
+    - Authentication settings
+    - Department assignment
+    - Active status
+    - Recent activity
+  </Step>
+</Steps>
+
+### Editing SIP Trunks
+
+<Steps>
+  <Step title="Open SIP Trunk">
+    Navigate to **Dashboard → SIP Trunks** and click on the SIP Trunk
+  </Step>
+
+  <Step title="Modify Settings">
+    Update any configuration:
+    - Name and friendly name
+    - Department routing
+    - Authentication settings
+    - Security options
+
+    <Note>
+      The SIP domain is read-only after creation. Create a new SIP Trunk to use a different domain.
+    </Note>
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Update** to save your modifications
+  </Step>
+</Steps>
+
+### Deleting SIP Trunks
+
+<Warning>
+  Deleting a SIP Trunk will:
+  - Stop all inbound call routing
+  - Remove authentication configurations
+  - Disconnect any active SIP clients
+  - Cannot be undone
+</Warning>
+
+<Steps>
+  <Step title="Navigate to SIP Trunks">
+    Go to **Dashboard → SIP Trunks**
+  </Step>
+
+  <Step title="Select SIP Trunk">
+    Find the SIP Trunk to delete
+  </Step>
+
+  <Step title="Delete">
+    Click the **Delete** button
+  </Step>
+
+  <Step title="Confirm">
+    Confirm the deletion when prompted
+  </Step>
+</Steps>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Secure SIP (SIPS)">
+    - Always enable SIPS in production
+    - Uses TLS encryption for signaling
+    - Protects credentials and call metadata
+    - Required for PCI compliance
+  </Accordion>
+
+  <Accordion title="IP Restrictions">
+    - Implement IP ACL where possible
+    - Use most restrictive whitelist
+    - Monitor for unauthorized access attempts
+    - Update IPs when infrastructure changes
+  </Accordion>
+
+  <Accordion title="Strong Passwords">
+    - Minimum 12 characters for SIP credentials
+    - Use password generators
+    - Include uppercase, lowercase, numbers, symbols
+    - Avoid dictionary words
+  </Accordion>
+
+  <Accordion title="Regular Credential Rotation">
+    - Change SIP passwords quarterly
+    - Immediately rotate compromised credentials
+    - Keep audit log of credential changes
+    - Disable unused credentials
+  </Accordion>
+
+  <Accordion title="Monitor Activity">
+    - Review SIP Trunk call logs regularly
+    - Set up alerts for unusual patterns
+    - Monitor failed authentication attempts
+    - Track usage by department/user
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection Failed">
+    **Problem**: Test connection fails or calls don't connect
+
+    **Solution**:
+    - Verify Twilio credentials in `.env` file
+    - Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN
+    - Ensure SIP_TRUNK=YES is set
+    - Check network firewall allows SIP traffic
+    - Verify SIP ports (5060/5061) are open
+    - Test Twilio API connectivity
+  </Accordion>
+
+  <Accordion title="Authentication Problems">
+    **Problem**: SIP clients cannot authenticate
+
+    **Solution**:
+    - Verify IP addresses in ACL are correct
+    - Check credentials are entered correctly (no typos)
+    - Ensure SIP Trunk is set to Active
+    - Verify Twilio console matches TelemanAI config
+    - Test with simple credentials first
+    - Check for special characters in passwords
+  </Accordion>
+
+  <Accordion title="Inbound Call Routing Issues">
+    **Problem**: Calls arrive but don't route to agents
+
+    **Solution**:
+    - Verify department has assigned agents
+    - Check agent availability status
+    - Review voice URL configuration
+    - Check TwiML response logs in Twilio console
+    - Verify SIP domain matches exactly
+    - Test with default routing (no department)
+  </Accordion>
+
+  <Accordion title="Web Dialer SIP Trunk Not Appearing">
+    **Problem**: SIP Trunk doesn't show in Web Dialer
+
+    **Solution**:
+    - Verify SIP_TRUNK=YES in `.env`
+    - Check SIP Trunk status is Active
+    - Ensure user has permissions
+    - Clear browser cache and refresh
+    - Verify TWILIO_SIP_ENABLED=true
+    - Check sip-trunk-dialer.js is loaded
+  </Accordion>
+
+  <Accordion title="Add IP Address Button Not Working">
+    **Problem**: Cannot add IP addresses or credentials
+
+    **Solution**:
+    - Open browser developer tools (F12)
+    - Check console for JavaScript errors
+    - Verify jQuery is loaded properly
+    - Test in incognito/private window
+    - Clear browser cache
+    - Check for JavaScript conflicts
+    - Try `/public/sip-trunk-test.html` for isolated testing
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Configuration
+
+### Custom Voice URLs
+
+For advanced routing scenarios, you can customize the voice URL:
+
+```bash
+# Custom voice URL format
+https://your-domain.com/custom/routing?param=value
+```
+
+Use cases:
+- Multi-tenant routing
+- Custom IVR integration
+- External call handling systems
+- A/B testing call flows
+
+### Webhook Configuration
+
+The default inbound webhook endpoint is:
+
+```
+POST https://your-domain.com/sip/inbound
+```
+
+This endpoint:
+- Parses SIP address to identify domain
+- Finds corresponding SIP Trunk in database
+- Routes based on department settings
+- Generates TwiML instructions for Twilio
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Web Dialer" icon="phone" href="/guides/web-dialer">
+    Use SIP Trunks with the Web Dialer
+  </Card>
+  <Card title="Departments & Agents" icon="users" href="/guides/departments-agents">
+    Configure departments for SIP call routing
+  </Card>
+  <Card title="Creating Campaigns" icon="bullhorn" href="/guides/creating-campaigns">
+    Use SIP Trunks in campaigns
+  </Card>
+  <Card title="Twilio Integration" icon="phone" href="/integrations/twilio">
+    Configure Twilio services
+  </Card>
+</CardGroup>

@@ -1,0 +1,329 @@
+---
+title: "Google Sheets Integration"
+description: "Import contacts from Google Sheets and export campaign data"
+icon: "table"
+---
+
+## Overview
+
+The Google Sheets integration allows you to:
+
+- Import contacts directly from Google Sheets
+- Export campaign results back to sheets
+- Sync contact data bidirectionally
+- Map spreadsheet columns to contact fields
+- Update call status in real-time
+
+## Prerequisites
+
+- A Google account with access to Google Sheets
+- Google Cloud Platform project with Sheets API enabled
+- OAuth 2.0 credentials configured
+
+## Setup Instructions
+
+<Steps>
+  <Step title="Create Google Cloud Project">
+    1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+    2. Click **Create Project** or select an existing project
+    3. Give your project a name (e.g., "TelemanAI Integration")
+    4. Click **Create**
+  </Step>
+
+  <Step title="Enable Google Sheets API">
+    1. In the Cloud Console, go to **APIs & Services** → **Library**
+    2. Search for "Google Sheets API"
+    3. Click on it and press **Enable**
+    4. Also enable "Google Drive API" for listing spreadsheets
+  </Step>
+
+  <Step title="Create OAuth 2.0 Credentials">
+    1. Go to **APIs & Services** → **Credentials**
+    2. Click **Create Credentials** → **OAuth client ID**
+    3. If prompted, configure the OAuth consent screen:
+       - Choose **External** user type
+       - Fill in app name, support email, and developer contact
+       - Add scopes: `https://www.googleapis.com/auth/spreadsheets` and `https://www.googleapis.com/auth/drive.readonly`
+    4. For Application type, select **Web application**
+    5. Add authorized redirect URI:
+       ```
+       https://your-domain.com/google/callback
+       ```
+    6. Click **Create**
+    7. Copy the **Client ID** and **Client Secret**
+
+    <Warning>
+      Keep your Client Secret secure. Do not share it publicly.
+    </Warning>
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Add the credentials to your `.env` file:
+
+    ```bash
+    GOOGLE_CLIENT_ID="519487288503-em802oaj52q01bufcvt8p7akccd8tc1c.apps.googleusercontent.com"
+    GOOGLE_CLIENT_SECRET="your_actual_client_secret_here"
+    GOOGLE_REDIRECT_URI="${APP_URL}/google/callback"
+    ```
+
+    <Note>
+      The `GOOGLE_REDIRECT_URI` must match exactly what you configured in Google Cloud Console.
+    </Note>
+  </Step>
+
+  <Step title="Connect Your Google Account">
+    1. Log in to TelemanAI
+    2. Navigate to **Integrations** → **Google Sheets**
+    3. Click **Connect Google Sheets**
+    4. Authorize TelemanAI to access your Google Sheets
+    5. You'll be redirected back to TelemanAI after authorization
+  </Step>
+</Steps>
+
+## Importing Contacts from Google Sheets
+
+<Steps>
+  <Step title="Select a Spreadsheet">
+    After connecting your Google account:
+
+    1. Click **Select Spreadsheet**
+    2. Choose the spreadsheet containing your contacts
+    3. Select the specific sheet/tab within the spreadsheet
+  </Step>
+
+  <Step title="Map Columns to Fields">
+    Map your spreadsheet columns to TelemanAI contact fields:
+
+    - **Name**: Contact's full name
+    - **Phone**: Phone number (required for calling)
+    - **Email**: Email address (optional)
+    - **Custom Fields**: Any additional data columns
+
+    <Note>
+      The first row of your spreadsheet should contain column headers.
+    </Note>
+  </Step>
+
+  <Step title="Import Contacts">
+    1. Review the column mappings
+    2. Click **Import Contacts**
+    3. TelemanAI will validate and import the data
+    4. Duplicate phone numbers are automatically skipped
+  </Step>
+</Steps>
+
+## Exporting Campaign Data
+
+TelemanAI can write campaign results back to your Google Sheets:
+
+<Steps>
+  <Step title="Enable Status Column">
+    TelemanAI automatically creates a "Status" column in your sheet if it doesn't exist. This column will be updated with:
+
+    - **Called**: Contact was successfully called
+    - **Completed**: Call completed successfully
+    - **Failed**: Call attempt failed
+    - **No Answer**: Contact didn't answer
+    - **Busy**: Line was busy
+  </Step>
+
+  <Step title="Configure Campaign for Export">
+    When creating a campaign:
+
+    1. Enable **Update Google Sheets**
+    2. Select the spreadsheet and sheet
+    3. Choose the status column to update
+  </Step>
+
+  <Step title="Monitor Real-time Updates">
+    As your campaign runs, TelemanAI updates the status column in real-time. You can:
+
+    - Watch live updates in Google Sheets
+    - Filter contacts by status
+    - Use formulas to calculate success rates
+  </Step>
+</Steps>
+
+## Sheet Format Requirements
+
+For best results, format your Google Sheets as follows:
+
+```
+| Name           | Phone          | Email                | Status    |
+|----------------|----------------|----------------------|-----------|
+| John Doe       | +1234567890    | john@example.com     | Pending   |
+| Jane Smith     | +0987654321    | jane@example.com     | Pending   |
+| Bob Johnson    | +1122334455    | bob@example.com      | Pending   |
+```
+
+<Note>
+  - Phone numbers should be in E.164 format (e.g., +1234567890)
+  - The first row must contain headers
+  - Avoid empty rows between data
+  - Status column can be anywhere; TelemanAI will find or create it
+</Note>
+
+## Advanced Features
+
+### Column Header Detection
+
+TelemanAI automatically detects column headers from the first row:
+
+```php
+// Example: Get headers from a sheet
+GET /api/google/column-headers
+{
+  "spreadsheet_id": "1abc...",
+  "sheet_name": "Contacts"
+}
+```
+
+Response:
+```json
+{
+  "headers": ["Name", "Phone", "Email", "Status"]
+}
+```
+
+### Bidirectional Sync
+
+Update cell values programmatically:
+
+```php
+// Update a specific cell
+POST /api/google/update-cell
+{
+  "spreadsheet_id": "1abc...",
+  "sheet_name": "Contacts",
+  "row_index": 2,
+  "column_index": 3,
+  "status_value": "Completed"
+}
+```
+
+### Automatic Status Column Creation
+
+TelemanAI can automatically append a status column if it doesn't exist:
+
+```php
+POST /api/google/ensure-status-column
+{
+  "spreadsheet_id": "1abc...",
+  "sheet_name": "Contacts",
+  "column_name": "Call Status"
+}
+```
+
+## API Endpoints
+
+Key endpoints for Google Sheets integration:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/google/connect` | GET | Initiate OAuth flow |
+| `/google/callback` | GET | OAuth callback handler |
+| `/google/disconnect` | POST | Disconnect Google Sheets |
+| `/google/spreadsheets` | GET | List all spreadsheets |
+| `/google/spreadsheet/select` | POST | Select a spreadsheet |
+| `/google/sheet/data` | GET | Get all sheet data |
+| `/google/column-headers` | GET | Get column headers |
+| `/google/update-cell` | POST | Update a cell value |
+
+See `GoogleSheetController.php` (lines 24-260) for implementation details.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Authentication Failed">
+    **Problem:** "Google API token not found in session"
+
+    **Solution:**
+    - Ensure you've completed the OAuth flow
+    - Check that `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
+    - Clear your session and reconnect: 
+      ```php
+      Session::forget('google_access_token');
+      ```
+  </Accordion>
+
+  <Accordion title="Permission Denied">
+    **Problem:** "Insufficient permissions to access spreadsheet"
+
+    **Solution:**
+    - Verify the Google Sheets API is enabled in your GCP project
+    - Check OAuth scopes include:
+      - `https://www.googleapis.com/auth/spreadsheets`
+      - `https://www.googleapis.com/auth/drive.readonly`
+    - Re-authorize with the "consent" prompt to grant new permissions
+  </Accordion>
+
+  <Accordion title="Token Expired">
+    **Problem:** "Could not refresh the Google access token"
+
+    **Solution:**
+    - The refresh token is automatically handled by TelemanAI
+    - If issues persist, disconnect and reconnect Google Sheets
+    - Ensure `setAccessType('offline')` is configured for refresh token
+  </Accordion>
+
+  <Accordion title="Column Headers Not Found">
+    **Problem:** "Could not retrieve column headers"
+
+    **Solution:**
+    - Ensure the first row of your sheet contains headers
+    - Check that the sheet is not empty
+    - Verify the sheet name is spelled correctly (case-sensitive)
+    - Sheet names with spaces are automatically handled with quotes
+  </Accordion>
+
+  <Accordion title="Import Fails with Validation Error">
+    **Problem:** Contacts fail to import
+
+    **Solution:**
+    - Verify phone numbers are in valid format
+    - Check for empty rows or cells in required columns
+    - Ensure no duplicate phone numbers exist
+    - Review Laravel logs for specific validation errors
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Warning>
+  **Important Security Considerations:**
+  - Never commit `GOOGLE_CLIENT_SECRET` to version control
+  - Use environment variables for all sensitive credentials
+  - Regularly rotate OAuth credentials
+  - Limit API scopes to only what's necessary
+  - Use HTTPS for all redirect URIs
+</Warning>
+
+## Token Refresh Mechanism
+
+TelemanAI automatically refreshes expired tokens:
+
+```php
+if ($client->isAccessTokenExpired() && $client->getRefreshToken()) {
+    $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+    Session::put('google_access_token', $client->getAccessToken());
+}
+```
+
+See `GoogleSheetsService.php` (line 39-48) for the implementation.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Import Contacts" icon="file-import" href="/guides/managing-contacts#importing-contacts-from-csv">
+    Learn more about importing contacts
+  </Card>
+  <Card title="Create Campaign" icon="bullhorn" href="/guides/creating-campaigns">
+    Use your imported contacts in a campaign
+  </Card>
+  <Card title="Export Results" icon="file-export" href="/features/analytics">
+    Export campaign results to sheets
+  </Card>
+  <Card title="API Reference" icon="code" href="/integrations/google-sheets">
+    Full API documentation
+  </Card>
+</CardGroup>

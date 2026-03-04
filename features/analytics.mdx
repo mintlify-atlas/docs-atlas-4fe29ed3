@@ -1,0 +1,527 @@
+---
+title: Analytics & Reporting
+description: Track call metrics, campaign performance, and business insights with comprehensive analytics dashboards
+icon: chart-mixed
+---
+
+## Overview
+
+TelemanAI provides powerful analytics tools to track your calling campaigns, monitor agent performance, and gain insights into your communication strategy. Make data-driven decisions with real-time metrics and historical reports.
+
+<CardGroup cols={2}>
+  <Card title="Real-Time Metrics" icon="gauge-high">
+    Monitor active campaigns and live call statistics
+  </Card>
+  <Card title="Campaign Reports" icon="chart-line">
+    Analyze voice and SMS campaign performance
+  </Card>
+  <Card title="Call History" icon="clock-rotate-left">
+    Review detailed records of all calls
+  </Card>
+  <Card title="Cost Tracking" icon="dollar-sign">
+    Monitor spending by provider and country
+  </Card>
+</CardGroup>
+
+## Dashboard Overview
+
+### Main Dashboard
+
+The TelemanAI dashboard provides an at-a-glance view of your business metrics:
+
+```php
+// From DashboardController.php:21-44 - Dashboard Data
+public function index(FundTransactionService $fundTransactionService)
+{
+    $data = [
+        'finance' => calculateFinancials(),
+        'customers' => User::where('role', 'customer')->count(),
+        'agents' => User::where('role', 'agent')->count(),
+        'stats' => $fundTransactionService->getDashboardStats(),
+        'yearlyData' => $fundTransactionService->getTransactionsByPeriod('yearly'),
+        'monthlyData' => $fundTransactionService->getTransactionsByPeriod('monthly'),
+        'weeklyData' => $fundTransactionService->getTransactionsByPeriod('weekly'),
+        'dailyData' => $fundTransactionService->getTransactionsByPeriod('daily'),
+        'transactions' => $fundTransactionService->getTransactions(['type' => null], true),
+        'transactionsCount' => $fundTransactionService->getTransactions(['type' => null], false),
+        'gateways' => $fundTransactionService->getGatewayBasedTotals(),
+    ];
+    
+    return view('backend.dashboard.index', $data);
+}
+```
+
+<Note>
+  Agents are automatically redirected to the Web Dialer interface when they log in, while administrators see the full analytics dashboard.
+</Note>
+
+### Key Metrics
+
+<CardGroup cols={2}>
+  <Card title="Total Customers" icon="users">
+    Number of registered customer accounts
+  </Card>
+  
+  <Card title="Active Agents" icon="headset">
+    Agents currently available for calls
+  </Card>
+  
+  <Card title="Financial Overview" icon="wallet">
+    Account balance, revenue, and expenses
+  </Card>
+  
+  <Card title="Gateway Performance" icon="credit-card">
+    Payment gateway transaction totals
+  </Card>
+</CardGroup>
+
+## Analytics Interface
+
+### Analytics Dashboard
+
+Access detailed analytics through the analytics controller:
+
+```php
+// From AnalyticsController.php:9-24 - Analytics Views
+public function index()
+{
+    return view('backend.analytics.index');
+}
+
+public function index_ajax()
+{
+    return view('backend.analytics.index_ajax');
+}
+```
+
+### Provider-Specific Analytics
+
+View analytics for specific Twilio providers:
+
+```php
+// From AnalyticsController.php:28-39 - Provider Analytics
+public function analytic($account_sid, $phone)
+{
+    return view('backend.analytics.analytic', compact('account_sid', 'phone'));
+}
+
+public function analytic_ajax($account_sid, $phone)
+{
+    return view('backend.analytics.analytic_ajax', compact('account_sid', 'phone'));
+}
+```
+
+<Accordion title="What Provider Analytics Show">
+  Provider-specific analytics include:
+  - Call volume by provider
+  - Cost breakdown per provider
+  - Success/failure rates
+  - Geographic distribution of calls
+  - Peak usage times
+  - Provider-specific issues or errors
+</Accordion>
+
+## Call History Analytics
+
+### Call History Dashboard
+
+Access comprehensive call history:
+
+```php
+// From CallHistoryController.php:9-12 - Call History
+public function index()
+{
+    return view('backend.call_history.index');
+}
+```
+
+### Call Record Structure
+
+Each call is tracked with detailed information:
+
+```sql
+-- From migrations/2023_04_16_231454_create_call_histories_table.php
+CREATE TABLE call_histories (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    caller_uuid TEXT,              -- Unique call identifier
+    user_id BIGINT UNSIGNED,       -- Agent who handled the call
+    identity_id BIGINT UNSIGNED,   -- Twilio identity
+    my_number TEXT,                -- Your Twilio number
+    caller_number TEXT,            -- Customer's phone number
+    pick_up_time TEXT,             -- When call was answered
+    hang_up_time TEXT,             -- When call ended
+    dial_call_sid TEXT,            -- Twilio call SID for lookup
+    record_file TEXT,              -- Recording URL (MP3)
+    status TEXT,                   -- missed, picked, hanged
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+### Analyzing Call Data
+
+Key metrics derived from call history:
+
+<AccordionGroup>
+  <Accordion title="Call Duration" icon="stopwatch">
+    ```php
+    // Calculate call duration
+    $duration = strtotime($call->hang_up_time) - strtotime($call->pick_up_time);
+    $minutes = floor($duration / 60);
+    $seconds = $duration % 60;
+    ```
+    
+    Track:
+    - Average call duration
+    - Longest calls
+    - Short call rate (potential quality issues)
+  </Accordion>
+  
+  <Accordion title="Call Status Distribution" icon="chart-pie">
+    Analyze call outcomes:
+    - **Picked** - Successfully connected calls
+    - **Missed** - Unanswered calls
+    - **Hanged** - Customer hung up
+    
+    Use to identify:
+    - Agent performance
+    - Optimal calling times
+    - Contact list quality
+  </Accordion>
+  
+  <Accordion title="Agent Performance" icon="user-chart">
+    Track individual agent metrics:
+    - Calls handled per agent
+    - Average call duration by agent
+    - Customer satisfaction by agent
+    - Call success rate
+  </Accordion>
+</AccordionGroup>
+
+## Campaign Analytics
+
+### Voice Campaign Metrics
+
+Track performance of voice campaigns:
+
+```sql
+-- From migrations/2022_06_28_101033_create_campaign_voices_table.php
+CREATE TABLE campaign_voices (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    campaign_id BIGINT UNSIGNED,
+    contact_id BIGINT UNSIGNED,
+    user_id BIGINT UNSIGNED,
+    phone TEXT,
+    status TEXT,                    -- Lead status (interested, not_interested, etc.)
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+### Lead Status Tracking
+
+Monitor how leads progress through campaigns:
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| **Interested** | Contact expressed interest | Follow up with sales call |
+| **Not Interested** | Contact declined | Remove from campaign |
+| **Callback** | Requested callback | Schedule follow-up |
+| **Wrong Number** | Invalid contact | Update contact list |
+| **Voicemail** | Went to voicemail | Try different time |
+| **No Answer** | Didn't pick up | Retry or send SMS |
+
+### Campaign Performance Calculation
+
+```php
+// Example campaign metrics calculation
+$total_contacts = CampaignVoice::where('campaign_id', $campaign_id)->count();
+$interested = CampaignVoice::where('campaign_id', $campaign_id)
+                           ->where('status', 'interested')
+                           ->count();
+$conversion_rate = ($interested / $total_contacts) * 100;
+```
+
+<CardGroup cols={3}>
+  <Card title="Contact Rate" icon="phone-volume">
+    Percentage of contacts successfully reached
+  </Card>
+  
+  <Card title="Conversion Rate" icon="percent">
+    Percentage of contacts marked as interested
+  </Card>
+  
+  <Card title="Cost Per Lead" icon="calculator">
+    Total campaign cost divided by leads generated
+  </Card>
+</CardGroup>
+
+## SMS Campaign Analytics
+
+### SMS Schedule Tracking
+
+```sql
+-- From migrations/2023_04_19_190736_create_sms_schedules_table.php
+CREATE TABLE sms_schedules (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    user_id BIGINT UNSIGNED,
+    campaign_id BIGINT UNSIGNED,
+    group_id BIGINT UNSIGNED,
+    provider BIGINT UNSIGNED,
+    start_at TEXT,
+    status TEXT,                    -- PENDING, RUNNING, COMPLETED
+    third_party_provider TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+### SMS Metrics
+
+Key SMS campaign metrics:
+
+- **Delivery Rate** - Percentage of messages successfully delivered
+- **Response Rate** - Percentage of recipients who replied
+- **Opt-Out Rate** - Percentage who unsubscribed
+- **Cost Per Message** - Average cost based on destination country
+- **Time to Response** - How quickly recipients engage
+
+## Cost Analytics
+
+### Call Cost Tracking
+
+Monitor calling costs by country:
+
+```sql
+-- From migrations/2022_08_05_094213_create_twilio_call_costs_table.php
+CREATE TABLE twilio_call_costs (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    code VARCHAR(10),               -- Country code
+    teleman_call_cost DECIMAL,      -- Cost per minute
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+### Cost Breakdown
+
+<Accordion title="Understanding Call Costs">
+  Call costs vary by:
+  - **Destination Country** - Different rates per country
+  - **Call Duration** - Billed per minute
+  - **Provider** - Different Twilio providers may have different rates
+  - **Call Type** - Inbound vs. outbound
+  
+  Example calculation:
+  ```php
+  $call_cost = $duration_minutes * $country_rate;
+  $total_campaign_cost = array_sum($all_call_costs);
+  $average_cost_per_call = $total_campaign_cost / $total_calls;
+  ```
+</Accordion>
+
+## Financial Analytics
+
+### Transaction Tracking
+
+The FundTransactionService provides comprehensive financial analytics:
+
+```php
+// From DashboardController.php:31-41 - Financial Data
+'stats' => $fundTransactionService->getDashboardStats(),
+'yearlyData' => $fundTransactionService->getTransactionsByPeriod('yearly'),
+'monthlyData' => $fundTransactionService->getTransactionsByPeriod('monthly'),
+'weeklyData' => $fundTransactionService->getTransactionsByPeriod('weekly'),
+'dailyData' => $fundTransactionService->getTransactionsByPeriod('daily'),
+'transactions' => $fundTransactionService->getTransactions(['type' => null], true),
+'gateways' => $fundTransactionService->getGatewayBasedTotals(),
+```
+
+### Financial Metrics
+
+<CardGroup cols={2}>
+  <Card title="Account Balance" icon="wallet">
+    Current available funds for campaigns
+  </Card>
+  
+  <Card title="Revenue Tracking" icon="arrow-trend-up">
+    Income from customer subscriptions and top-ups
+  </Card>
+  
+  <Card title="Expense Tracking" icon="arrow-trend-down">
+    Costs for voice calls, SMS, and AI assistants
+  </Card>
+  
+  <Card title="Gateway Analysis" icon="credit-card">
+    Performance of different payment gateways
+  </Card>
+</CardGroup>
+
+### Time-Based Analysis
+
+Analyze trends over different time periods:
+
+- **Daily** - Today's activity and costs
+- **Weekly** - Last 7 days comparison
+- **Monthly** - Current month vs. previous months
+- **Yearly** - Annual trends and forecasting
+
+## Voice AI Analytics
+
+### VAPI Call Reports
+
+For AI-powered campaigns, track additional metrics:
+
+```php
+// From VapiController.php:19-26 - AI Call Analytics
+public function index()
+{
+    $callLogs = collect($this->vapiService->listCalls())->sortByDesc('createdAt')->toArray();
+    $reportService = new VapiReportService($callLogs);
+    return view('backend.voiceai.index', [
+        'reportService' => $reportService,
+    ]);
+}
+```
+
+### AI-Specific Metrics
+
+<AccordionGroup>
+  <Accordion title="Conversation Quality" icon="comment-check">
+    - Average conversation length
+    - Successful conversation completion rate
+    - Number of times AI couldn't understand
+    - Forward to human rate
+  </Accordion>
+  
+  <Accordion title="Sentiment Analysis" icon="face-smile">
+    - Overall customer sentiment (positive/negative/neutral)
+    - Sentiment by campaign
+    - Sentiment by time of day
+    - Correlation with conversion
+  </Accordion>
+  
+  <Accordion title="AI Performance" icon="robot">
+    - Response time (latency)
+    - Transcription accuracy
+    - Model tokens used
+    - Cost per conversation
+  </Accordion>
+</AccordionGroup>
+
+## Exporting Reports
+
+### Campaign Lead Export
+
+Export campaign results for external analysis:
+
+```php
+// From CampaignController.php:470-482 - Export Leads
+public function leads_export($campaign_id)
+{
+    store_leads_export_history($campaign_id);
+    return Excel::download(new LeadsExport($campaign_id), 'leads.csv');
+}
+```
+
+Exported data includes:
+- Contact information
+- Call timestamps
+- Lead status
+- Campaign details
+- Call duration and cost
+
+### Contact Export
+
+Export your contact database:
+
+```php
+// From ContactController.php:371-374 - Export Contacts
+public function export()
+{
+    return Excel::download(new ContactsExport, 'contacts.csv');
+}
+```
+
+## Quota Management
+
+### Hourly Quota Tracking
+
+Monitor and enforce calling quotas:
+
+```sql
+-- From migrations/2022_06_17_201226_create_quota_logs_table.php
+CREATE TABLE quota_logs (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    user_id BIGINT UNSIGNED,
+    provider BIGINT UNSIGNED,
+    contact_id BIGINT UNSIGNED,
+    phone TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+<Note>
+  Quota logs prevent exceeding carrier limits and help pace campaigns for optimal delivery.
+</Note>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Daily Monitoring" icon="calendar-day">
+    Check your dashboard daily to catch issues early and optimize ongoing campaigns.
+  </Card>
+  
+  <Card title="Weekly Reviews" icon="calendar-week">
+    Analyze weekly trends to identify patterns in contact behavior and campaign performance.
+  </Card>
+  
+  <Card title="Cost Analysis" icon="magnifying-glass-dollar">
+    Regularly review costs by provider and country to optimize your spending.
+  </Card>
+  
+  <Card title="A/B Testing" icon="flask">
+    Run parallel campaigns with different messages or timing to identify what works best.
+  </Card>
+</CardGroup>
+
+## Custom Reports
+
+Create custom analytics queries for specific insights:
+
+```php
+// Example: Campaign performance by day of week
+$performance_by_day = CampaignVoice::selectRaw('DAYNAME(created_at) as day, 
+                                                 COUNT(*) as total, 
+                                                 SUM(CASE WHEN status="interested" THEN 1 ELSE 0 END) as interested')
+                                   ->where('campaign_id', $campaign_id)
+                                   ->groupBy('day')
+                                   ->get();
+```
+
+## Data Retention
+
+<Warning>
+  Call recordings and detailed logs may be subject to data retention policies. Check your local regulations regarding:
+  - Call recording storage duration
+  - Customer data retention
+  - GDPR/privacy compliance
+  - Audit trail requirements
+</Warning>
+
+## Related Features
+
+<CardGroup cols={3}>
+  <Card title="Voice Campaigns" icon="bullhorn" href="/features/campaigns">
+    View performance metrics for your campaigns
+  </Card>
+  
+  <Card title="Web Dialer" icon="phone" href="/features/dialer">
+    Access call history from the dialer interface
+  </Card>
+  
+  <Card title="Voice AI" icon="robot" href="/features/voice-ai">
+    Analyze AI assistant conversation data
+  </Card>
+</CardGroup>

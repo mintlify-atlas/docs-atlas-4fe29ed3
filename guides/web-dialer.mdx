@@ -1,0 +1,510 @@
+---
+title: Web Dialer
+description: Make and receive calls directly through your browser with TelemanAI's web-based dialer
+icon: 'phone'
+---
+
+The TelemanAI Web Dialer allows agents to make and receive calls directly through their web browser without requiring additional hardware or software. This guide covers everything you need to know about using the Web Dialer.
+
+## Overview
+
+The Web Dialer provides:
+
+- **Browser-based calling**: No phone hardware required
+- **Twilio integration**: Uses Twilio Client SDK for WebRTC calls
+- **SIP Trunk support**: Route calls through SIP domains
+- **Call recording**: Automatic recording of all calls
+- **Contact integration**: Automatic contact lookup during calls
+- **Department routing**: Support for department-based call handling
+- **Real-time status**: Live call status and duration tracking
+
+## Accessing the Web Dialer
+
+<Steps>
+  <Step title="Login to TelemanAI">
+    Log in to your TelemanAI account with your credentials
+  </Step>
+
+  <Step title="Navigate to Web Dialer">
+    From your dashboard, go to **Dashboard → Web Dialer**
+
+    <Note>
+      You must have OTP verification and KYC verification completed to access the dialer.
+    </Note>
+  </Step>
+
+  <Step title="Allow Microphone Access">
+    When prompted by your browser:
+    - Click **Allow** to grant microphone access
+    - This is required for making and receiving calls
+    - Permission is saved for future sessions
+
+    <Warning>
+      Without microphone permissions, the Web Dialer cannot function. If you denied access, reset permissions in your browser settings.
+    </Warning>
+  </Step>
+
+  <Step title="Wait for Connection">
+    The dialer will automatically:
+    - Connect to Twilio
+    - Load your identity and token
+    - Display "Ready" status when connected
+  </Step>
+</Steps>
+
+## Web Dialer Interface
+
+The Web Dialer interface includes:
+
+### Main Components
+
+- **Phone Number Input**: Enter the number to call
+- **Call Button**: Initiate outbound calls
+- **Hang Up Button**: End active calls
+- **Status Display**: Shows current connection status
+- **Call Timer**: Displays active call duration
+- **Contact Info Panel**: Shows caller information for inbound calls
+- **SIP Trunk Selector**: Choose SIP Trunk for routing (if enabled)
+
+### Status Indicators
+
+- **Ready**: Connected and ready to make/receive calls
+- **Calling**: Outbound call in progress
+- **Ringing**: Incoming call alert
+- **In Call**: Active call connected
+- **Disconnected**: Call ended
+- **Error**: Connection or call error
+
+## Making Outbound Calls
+
+<Steps>
+  <Step title="Open Web Dialer">
+    Navigate to **Dashboard → Web Dialer**
+  </Step>
+
+  <Step title="Enter Phone Number">
+    In the phone number field:
+    - Enter the complete phone number with country code
+    - Format: `+1234567890`
+    - Include the `+` prefix
+
+    <Tip>
+      The system will automatically format numbers based on your configuration.
+    </Tip>
+  </Step>
+
+  <Step title="Select Provider (Optional)">
+    If you have multiple providers:
+    - Select the provider from the dropdown
+    - Or use your default active provider
+  </Step>
+
+  <Step title="Select SIP Trunk (Optional)">
+    If SIP Trunks are enabled:
+    - Choose a SIP Trunk from the dropdown
+    - Calls will route through the SIP domain
+    - Leave blank to use standard Twilio routing
+
+    <Note>
+      SIP Trunk routing may offer cost savings and additional routing options.
+    </Note>
+  </Step>
+
+  <Step title="Click Call">
+    Click the **Call** button to initiate the call:
+    - Status changes to "Calling"
+    - Wait for the recipient to answer
+    - Call timer starts when connected
+  </Step>
+
+  <Step title="Conduct Your Call">
+    During the call:
+    - Speak normally into your microphone
+    - Use headphones to avoid echo
+    - Monitor call timer
+    - Take notes if needed
+  </Step>
+
+  <Step title="End Call">
+    When finished:
+    - Click **Hang Up** button
+    - Or wait for recipient to disconnect
+    - Call history is automatically saved
+  </Step>
+</Steps>
+
+## Receiving Inbound Calls
+
+The Web Dialer can receive incoming calls when you're logged in.
+
+<Steps>
+  <Step title="Ensure Dialer is Active">
+    Keep the Web Dialer page open and active:
+    - Browser tab should not be closed
+    - Microphone permissions enabled
+    - Status shows "Ready"
+  </Step>
+
+  <Step title="Set Agent Availability">
+    Navigate to **Dashboard → Inbound Call** (Dialerpad):
+    - This marks you as available for inbound calls
+    - Incoming calls will route to your Web Dialer
+    - System tracks your availability status
+
+    <Tip>
+      Use the dialerpad page to signal you're ready to accept calls.
+    </Tip>
+  </Step>
+
+  <Step title="Incoming Call Alert">
+    When a call arrives:
+    - Browser plays ring tone
+    - Status changes to "Ringing"
+    - Caller information displays (if available)
+    - System shows contact details if in database
+  </Step>
+
+  <Step title="Answer Call">
+    The call connects automatically or:
+    - Click **Answer** button
+    - Call timer starts
+    - Contact info panel shows caller details
+  </Step>
+
+  <Step title="Handle the Call">
+    During the inbound call:
+    - View contact information in the panel
+    - See caller name, phone, email, etc.
+    - Access call history for this contact
+    - Take notes or update contact info
+  </Step>
+
+  <Step title="End Call">
+    Click **Hang Up** when finished or caller disconnects
+  </Step>
+</Steps>
+
+## Using SIP Trunks with Web Dialer
+
+If SIP Trunks are enabled, you can route calls through SIP domains.
+
+### Enabling SIP Trunk Dialing
+
+<Steps>
+  <Step title="Verify SIP Trunk Configuration">
+    Ensure:
+    - `SIP_TRUNK=YES` in environment configuration
+    - At least one active SIP Trunk configured
+    - SIP Trunk authentication is set up
+    - Test connection is successful
+  </Step>
+
+  <Step title="Open Web Dialer">
+    Navigate to **Dashboard → Web Dialer**
+  </Step>
+
+  <Step title="Select SIP Trunk">
+    In the Web Dialer interface:
+    - Look for **SIP Trunk** dropdown (appears when enabled)
+    - Select your desired SIP Trunk
+    - SIP Trunk info panel displays configuration details
+  </Step>
+
+  <Step title="Make Calls">
+    With SIP Trunk selected:
+    - Enter phone number as usual
+    - Click **Call**
+    - Call routes through your SIP domain
+    - Status shows "Calling via SIP Trunk"
+  </Step>
+</Steps>
+
+### SIP Trunk Call Flow
+
+When using SIP Trunk routing:
+
+1. You enter phone number and click Call
+2. System retrieves enhanced token with SIP Trunk data
+3. Twilio Client connects using SIP domain
+4. Call routes through SIP Trunk domain instead of regular Twilio number
+5. Call connects to destination
+
+### Benefits of SIP Trunk Calling
+
+- **Cost efficiency**: Potentially lower per-minute rates
+- **Flexibility**: Multiple routing options
+- **Department routing**: Calls can be tracked by department
+- **Scalability**: Support for multiple SIP domains
+
+## Call Controls and Features
+
+### Call Timer
+
+The call timer shows:
+- Active call duration in MM:SS format
+- Starts when call connects
+- Resets after call ends
+- Used for billing and reporting
+
+### Contact Information Display
+
+During calls, the system automatically:
+- Searches contacts by phone number
+- Displays matching contact information
+- Shows contact name, email, country, profession
+- Displays "No caller data found" if no match
+
+### Call History Logging
+
+Every call automatically creates:
+- Call history record with duration
+- Call status (answered, no answer, busy, failed)
+- Call recording URL (if enabled)
+- Cost calculation
+- Timestamp and date
+
+## Department-Based Routing
+
+The Web Dialer supports department-specific calling.
+
+<Steps>
+  <Step title="Access Department Dialer">
+    Navigate to **Dashboard → Dialer → [Department Name]**
+    
+    Replace `[Department Name]` with your department slug
+  </Step>
+
+  <Step title="Make Department Calls">
+    Calls made through this dialer:
+    - Use department-assigned provider
+    - Track to department metrics
+    - Follow department call routing rules
+  </Step>
+</Steps>
+
+## Audio Quality Settings
+
+For optimal call quality:
+
+### Hardware Recommendations
+
+- **Microphone**: USB headset or built-in laptop mic
+- **Speakers**: Headphones (strongly recommended to avoid echo)
+- **Internet**: Minimum 100 kbps upload/download per call
+- **Browser**: Latest Chrome, Firefox, or Edge
+
+### Browser Settings
+
+<AccordionGroup>
+  <Accordion title="Chrome">
+    1. Go to `chrome://settings/content/microphone`
+    2. Ensure microphone access is allowed for your domain
+    3. Select correct microphone device
+    4. Test microphone levels
+  </Accordion>
+
+  <Accordion title="Firefox">
+    1. Go to `about:preferences#privacy`
+    2. Scroll to Permissions → Microphone
+    3. Click Settings next to microphone
+    4. Allow access for your domain
+  </Accordion>
+
+  <Accordion title="Edge">
+    1. Go to `edge://settings/content/microphone`
+    2. Allow microphone access
+    3. Select your microphone device
+    4. Test audio levels
+  </Accordion>
+</AccordionGroup>
+
+### Network Requirements
+
+- **Bandwidth**: 100+ kbps per concurrent call
+- **Latency**: Under 150ms recommended
+- **Jitter**: Under 30ms for best quality
+- **Firewall**: Allow WebRTC and Twilio domains
+
+<Warning>
+  Poor network conditions may cause audio quality issues, dropped calls, or connection failures.
+</Warning>
+
+## Call Recording
+
+All calls are automatically recorded when enabled.
+
+### Recording Settings
+
+- **Recording mode**: `record-from-answer-dual`
+- **Format**: Saved as audio file
+- **Storage**: Linked in call history
+- **Access**: Available in call history details
+
+### Accessing Recordings
+
+<Steps>
+  <Step title="Navigate to Call History">
+    Go to **Dashboard → Call History**
+  </Step>
+
+  <Step title="Find Call Record">
+    Locate the call in your history:
+    - Search by date
+    - Filter by phone number
+    - Sort by duration or cost
+  </Step>
+
+  <Step title="Play Recording">
+    Click on the recording URL to:
+    - Play audio in browser
+    - Download for offline access
+    - Share with team members (if permitted)
+  </Step>
+</Steps>
+
+<Note>
+  Ensure you comply with local laws regarding call recording and customer notification.
+</Note>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Audio Quality">
+    - Always use a headset to prevent echo
+    - Use USB headset for better quality than Bluetooth
+    - Test audio before important calls
+    - Ensure quiet environment
+    - Close bandwidth-heavy applications during calls
+  </Accordion>
+
+  <Accordion title="Call Preparation">
+    - Review contact information before calling
+    - Prepare call script or talking points
+    - Have CRM or notes ready
+    - Check account balance before calling
+    - Test dialer connection at start of shift
+  </Accordion>
+
+  <Accordion title="Professional Conduct">
+    - Introduce yourself clearly at call start
+    - Speak clearly and at moderate pace
+    - Use professional language
+    - Take notes during calls
+    - Update contact records after calls
+  </Accordion>
+
+  <Accordion title="Technical Reliability">
+    - Use wired internet connection when possible
+    - Keep browser updated to latest version
+    - Close unnecessary browser tabs during calls
+    - Monitor call quality indicators
+    - Have backup calling method ready
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No Microphone Access">
+    **Problem**: Cannot make calls, microphone error
+
+    **Solution**:
+    - Check browser permissions for microphone
+    - Reset permissions in browser settings
+    - Try different browser
+    - Check if another app is using microphone
+    - Restart browser
+    - Test microphone in system settings
+  </Accordion>
+
+  <Accordion title="Cannot Connect to Dialer">
+    **Problem**: Dialer shows disconnected or error status
+
+    **Solution**:
+    - Verify provider is configured and active
+    - Check Twilio credentials in provider settings
+    - Ensure sufficient account balance
+    - Clear browser cache and reload
+    - Check network connectivity
+    - Verify firewall allows WebRTC traffic
+  </Accordion>
+
+  <Accordion title="Poor Audio Quality">
+    **Problem**: Choppy audio, echo, or distortion
+
+    **Solution**:
+    - Use headphones instead of speakers
+    - Switch to wired internet connection
+    - Close bandwidth-heavy applications
+    - Reduce number of active calls
+    - Check network speed (run speed test)
+    - Try different audio device
+  </Accordion>
+
+  <Accordion title="Calls Not Connecting">
+    **Problem**: Calls fail or disconnect immediately
+
+    **Solution**:
+    - Verify phone number format (+[country code][number])
+    - Check account balance is sufficient
+    - Verify provider phone number is active
+    - Test with different phone number
+    - Check for hourly quota limits
+    - Review Twilio console for errors
+  </Accordion>
+
+  <Accordion title="SIP Trunk Not Available">
+    **Problem**: SIP Trunk dropdown doesn't appear
+
+    **Solution**:
+    - Verify `SIP_TRUNK=YES` in configuration
+    - Check at least one SIP Trunk is active
+    - Ensure SIP Trunk permissions for user
+    - Clear cache and reload page
+    - Check browser console for JavaScript errors
+  </Accordion>
+
+  <Accordion title="Inbound Calls Not Received">
+    **Problem**: Not receiving incoming calls
+
+    **Solution**:
+    - Navigate to Dialerpad to set availability
+    - Ensure Web Dialer page is open and active
+    - Check agent availability status
+    - Verify provider number is configured for inbound
+    - Check department routing settings
+    - Review queue status if calls are queuing
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard Shortcuts
+
+Speed up your workflow with keyboard shortcuts:
+
+| Action | Shortcut | Description |
+|--------|----------|-------------|
+| Focus number input | `Ctrl + K` | Jump to phone number field |
+| Start call | `Enter` | When number field is focused |
+| Hang up | `Ctrl + H` | End active call |
+| Mute/Unmute | `Ctrl + M` | Toggle mute (if supported) |
+
+<Note>
+  Keyboard shortcuts may vary by browser. Check browser-specific documentation for WebRTC shortcuts.
+</Note>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="SIP Trunk Setup" icon="network-wired" href="/guides/sip-trunk-setup">
+    Configure SIP Trunks for web dialer calling
+  </Card>
+  <Card title="Creating Campaigns" icon="bullhorn" href="/guides/creating-campaigns">
+    Create automated calling campaigns
+  </Card>
+  <Card title="Departments & Agents" icon="users" href="/guides/departments-agents">
+    Set up department-based routing
+  </Card>
+  <Card title="Managing Contacts" icon="address-book" href="/guides/managing-contacts">
+    Organize contacts for easier dialing
+  </Card>
+</CardGroup>

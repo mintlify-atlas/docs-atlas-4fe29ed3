@@ -1,0 +1,536 @@
+---
+title: Web Dialer
+description: Make and receive calls directly from your browser with TelemanAI's browser-based dialing system
+icon: phone
+---
+
+## Overview
+
+The TelemanAI Web Dialer is a browser-based calling interface powered by Twilio Client SDK. Make and receive calls without any hardware, track call history automatically, and manage conversations with integrated contact information.
+
+<CardGroup cols={2}>
+  <Card title="Browser-Based" icon="chrome">
+    No phone hardware required - call from any device
+  </Card>
+  <Card title="WebRTC Technology" icon="signal">
+    Crystal-clear VoIP calls using WebRTC
+  </Card>
+  <Card title="Call Recording" icon="record-vinyl">
+    Automatic recording of all conversations
+  </Card>
+  <Card title="SIP Trunk Support" icon="network-wired">
+    Connect to external SIP trunks for advanced routing
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+### Prerequisites
+
+Before using the Web Dialer, ensure:
+
+<Steps>
+  <Step title="Provider Configuration">
+    Set up at least one Twilio provider with your account credentials
+  </Step>
+  
+  <Step title="Phone Number">
+    Associate a Twilio phone number with your provider
+  </Step>
+  
+  <Step title="Browser Permissions">
+    Allow microphone access in your browser
+  </Step>
+  
+  <Step title="TwiML App">
+    Configure a TwiML application (capability token) in your provider settings
+  </Step>
+</Steps>
+
+### Accessing the Dialer
+
+Navigate to the dialer interface from your dashboard:
+
+```php
+// From DialerController.php:24-29 - Dialer Index
+public function index($department = null)
+{
+    generate_user_slug(auth()->id());
+    return view('backend.dialer.index', compact('department'));
+}
+```
+
+## Making Calls
+
+### Outbound Calling
+
+The Web Dialer uses Twilio Client SDK for outbound calls:
+
+```php
+// From DialerController.php:34-50 - Generate Dialer Token
+public function dialer_token()
+{
+    $accountSid = user_active_provider_info()->account_sid;
+    $authToken  = user_active_provider_info()->auth_token;
+    $appSid     = user_active_provider_info()->capability_token;
+    
+    // Generate token for the client
+    $capability = new ClientToken($accountSid, $authToken);
+    $capability->allowClientOutgoing($appSid);
+    $capability->allowClientIncoming(get_user_identity(auth()->id()));
+    $token = $capability->generateToken(3600*12);  // 12-hour token
+    
+    $data['identity'] = get_user_identity(auth()->id());
+    $data['token'] = $token;
+    echo json_encode($data);
+}
+```
+
+<Accordion title="How Token Authentication Works">
+  The Web Dialer uses short-lived tokens for security:
+  
+  1. Your browser requests a token from the server
+  2. Server generates a 12-hour token using your Twilio credentials
+  3. Browser uses the token to establish WebRTC connection
+  4. Token expires automatically after 12 hours for security
+</Accordion>
+
+### Call Handling
+
+When you make a call, TelemanAI handles the routing:
+
+```php
+// From DialerController.php:53-131 - Handle Outbound Call
+public function handle_call(Request $request)
+{
+    $data = $request->all();
+    $response = new VoiceResponse();
+    
+    // OUTBOUND CALL
+    if (isset($data['ApplicationSid'])) {
+        $applicationSid = $data['ApplicationSid'];
+        $provider = Provider::where('capability_token', $applicationSid)->first();
+        $twilio_number = $provider->phone;
+        
+        $response->dial($data['To'], [
+            'callerId' => $twilio_number,
+            'record' => 'record-from-answer-dual',  // Record both sides
+            'action' => '',
+            'timeout' => 20,
+            'method' => 'POST',
+            'statusCallback' => route('dialer.handle_status'),
+            'statusCallbackMethod' => 'POST',
+            'statusCallbackEvent' => 'initiated ringing answered completed'
+        ]);
+    }
+    
+    return response($response)->header('Content-Type', 'text/xml');
+}
+```
+
+<Note>
+  All calls are automatically recorded in dual-channel format, capturing both sides of the conversation.
+</Note>
+
+## Receiving Calls
+
+### Inbound Call Flow
+
+The Web Dialer can receive incoming calls to your Twilio numbers:
+
+```php
+// From DialerController.php:88-126 - Handle Inbound Call
+else {
+    // INBOUND CALL
+    $user_id = Provider::where('phone', $data['Called'])->first()->user_id;
+    $identity = Identity::where('user_id', $user_id)->first()->identity;
+    
+    $response->pause(['length' => 2]);
+    
+    $agentAvailable = checkAgentAvailability($user_id);
+    
+    if ($agentAvailable == 1) {
+        // Remove from queue if agent is available
+        removeFromQueue($data['Caller'], $data['Called']);
+        
+        $dial = $response->dial('', [
+            'record' => 'record-from-answer-dual',
+            'action' => '',
+            'timeout' => 20,
+            'method' => 'POST',
+            'statusCallback' => route('dialer.handle_status'),
+            'statusCallbackMethod' => 'POST',
+            'statusCallbackEvent' => 'initiated ringing answered completed'
+        ]);
+        $dial->client($identity);
+    } else {
+        // Add to queue if no agents available
+        moveToQueue($data['Caller'], $data['Called'], 1, $user_id);
+        
+        $response->say('All of our agents are currently busy...');
+        $response->pause(['length' => 3]);
+        $response->say('Your call is number ' . getCallerQueueSerialNumber($data['Called'], $data['Caller']) . ' in the queue.');
+        $response->redirect(route('dialer.handle_call'), ['method' => 'POST']);
+    }
+}
+```
+
+<Accordion title="Call Queue System">
+  When all agents are busy, incoming calls are automatically queued:
+  
+  - Caller hears a message about their queue position
+  - System checks for available agents every few seconds
+  - Calls are routed in order when agents become available
+  - Queue position is announced to keep callers informed
+</Accordion>
+
+## Call History
+
+### Automatic Tracking
+
+Every call is automatically logged with detailed information:
+
+```php
+// From DialerController.php:160-198 - Create Call History
+public function createCallHistory(Request $request)
+{
+    $history = CallHistory::where([
+        'user_id' => auth()->id(),
+        'identity_id' => get_user_identity_id(auth()->id()),
+        'caller_uuid' => $request->get_caller_uuid_session,
+    ])->first();
+    
+    if ($history) {
+        if ($history->pick_up_time == null) {
+            $history->pick_up_time = now();
+        }
+        if ($history->hang_up_time == null) {
+            $history->hang_up_time = now();
+        }
+        $history->status = $request->status;
+        $history->save();
+    } else {
+        $history = CallHistory::create([
+            'user_id' => auth()->id(),
+            'identity_id' => get_user_identity_id(auth()->id()),
+            'my_number' => $request->my_number,
+            'caller_number' => $request->caller_number,
+            'caller_uuid' => $request->get_caller_uuid_session,
+            'pick_up_time' => now(),
+            'hang_up_time' => $request->hang_up_time ?? null,
+            'status' => $request->status,
+        ]);
+    }
+    
+    return response()->json($history, 200);
+}
+```
+
+### Call History Data Structure
+
+```sql
+-- From migrations/2023_04_16_231454_create_call_histories_table.php
+CREATE TABLE call_histories (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    caller_uuid TEXT,              -- Unique call identifier
+    user_id BIGINT UNSIGNED,       -- Agent who handled the call
+    identity_id BIGINT UNSIGNED,   -- Twilio identity
+    my_number TEXT,                -- Your Twilio number
+    caller_number TEXT,            -- Customer's number
+    pick_up_time TEXT,             -- When call was answered
+    hang_up_time TEXT,             -- When call ended
+    dial_call_sid TEXT,            -- Twilio call SID
+    record_file TEXT,              -- Recording URL
+    status TEXT,                   -- missed, picked, hanged
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+## Call Recording
+
+### Automatic Recording
+
+All calls are recorded in dual-channel format:
+
+```php
+// From DialerController.php:201-228 - Recording Handler
+public function recording(Request $request)
+{
+    $recordingUrl = $request->RecordingUrl ?? null;
+    $DialCallSid = $request->DialCallSid ?? null;
+    $my_number = $request->Called ?? null;
+    $caller_number = $request->To ?? null;
+    
+    if (!$recordingUrl || !$my_number || !$caller_number) {
+        return response()->json(['error' => 'Missing required parameters'], 400);
+    }
+    
+    $add_record_to_call_history = CallHistory::where('my_number', $my_number)
+                                            ->where('caller_number', $caller_number)
+                                            ->latest()
+                                            ->first();
+    
+    if ($add_record_to_call_history) {
+        $add_record_to_call_history->dial_call_sid = $DialCallSid ?? null;
+        $add_record_to_call_history->record_file = $recordingUrl . '.mp3';
+        $add_record_to_call_history->save();
+    }
+    
+    return response()->json(['status' => 'success'], 200);
+}
+```
+
+<Warning>
+  Call recording may be subject to legal requirements in your jurisdiction. Always inform callers that the call is being recorded.
+</Warning>
+
+### AI-Powered Analysis
+
+Analyze recorded calls using OpenAI:
+
+```php
+// From DialerController.php:230-246 - Analyze Call Recording
+public function analyze_the_call_record($file_name)
+{
+    if (env('OPENAI_API_KEY') == null) {
+        smilify('error', translate('OPENAI key is not configured.'));
+        return back();
+    }
+    
+    try {
+        $transcribed_text = analyze_call_record($file_name)['transcribed_text'];
+        $analyze_call_record = analyze_call_record($file_name)['analysis_result'];
+        return view('backend.dialer.record_analyze_open_ai', 
+                    compact('transcribed_text', 'analyze_call_record', 'file_name'));
+    } catch (\Throwable $th) {
+        smilify('error', $th->getMessage());
+        return back();
+    }
+}
+```
+
+<Accordion title="What AI Analysis Provides">
+  When you analyze a call recording, you get:
+  
+  - **Transcription** - Full text transcript of the conversation
+  - **Sentiment Analysis** - Overall tone and sentiment
+  - **Key Topics** - Main discussion points
+  - **Action Items** - Follow-up tasks identified
+  - **Summary** - Concise overview of the call
+</Accordion>
+
+## SIP Trunk Integration
+
+### Enhanced Calling with SIP Trunks
+
+Connect external SIP trunks for advanced routing:
+
+```php
+// From DialerController.php:280-303 - Get SIP Trunk Configuration
+public function getSipTrunkConfig(Request $request)
+{
+    $user = Auth::user();
+    
+    // Get user's active SIP Trunks
+    $sipTrunks = \App\Models\SipTrunk::where('user_id', $user->id)
+        ->where('is_active', true)
+        ->get();
+        
+    $config = [
+        'sip_enabled' => config('services.twilio.sip.enabled', false),
+        'sip_trunks' => $sipTrunks->map(function($trunk) {
+            return [
+                'id' => $trunk->id,
+                'name' => $trunk->name,
+                'domain' => $trunk->sip_domain,
+                'uri' => $trunk->sip_uri,
+                'department' => $trunk->department ? $trunk->department->name : null
+            ];
+        })
+    ];
+    
+    return response()->json($config);
+}
+```
+
+### SIP Trunk Data Structure
+
+```sql
+-- From migrations/2025_06_20_000001_create_sip_trunks_table.php
+CREATE TABLE sip_trunks (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    user_id BIGINT UNSIGNED,
+    department_id BIGINT UNSIGNED NULL,
+    name VARCHAR(255),
+    sip_domain VARCHAR(255),
+    friendly_name VARCHAR(255) NULL,
+    sip_uri VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    secure BOOLEAN DEFAULT TRUE,
+    credential_type ENUM('IP_ACL', 'CREDENTIAL_LIST') DEFAULT 'IP_ACL',
+    credentials JSON NULL,
+    ip_access_control_list JSON NULL,
+    voice_url TEXT NULL,
+    voice_method ENUM('GET', 'POST') DEFAULT 'POST',
+    configuration JSON NULL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+### Making SIP Trunk Calls
+
+Route calls through specific SIP trunks:
+
+```php
+// From DialerController.php:348-389 - Handle SIP Call
+public function handleSipCall(Request $request)
+{
+    $data = $request->all();
+    $response = new VoiceResponse();
+    
+    $sipTrunkId = $request->input('sip_trunk_id');
+    
+    if ($sipTrunkId) {
+        $sipTrunk = \App\Models\SipTrunk::find($sipTrunkId);
+        
+        if ($sipTrunk && $sipTrunk->user_id === auth()->id() && $sipTrunk->is_active) {
+            // Route call through SIP Trunk
+            $response->dial($data['To'], [
+                'callerId' => $sipTrunk->sip_uri,
+                'record' => 'record-from-answer-dual',
+                'action' => route('dialer.handle_status'),
+                'timeout' => 20,
+                'method' => 'POST',
+                'statusCallback' => route('dialer.handle_status'),
+                'statusCallbackMethod' => 'POST',
+                'statusCallbackEvent' => 'initiated ringing answered completed'
+            ]);
+            
+            Log::info('SIP Trunk call initiated', [
+                'sip_trunk_id' => $sipTrunk->id,
+                'domain' => $sipTrunk->sip_domain,
+                'to' => $data['To'],
+                'user_id' => auth()->id()
+            ]);
+            
+            return response($response)->header('Content-Type', 'text/xml');
+        }
+    }
+}
+```
+
+<Note>
+  SIP trunks are useful for integrating with existing phone systems or routing calls through specific carriers.
+</Note>
+
+## Call Status Tracking
+
+### Real-Time Status Updates
+
+Track call status in real-time:
+
+```php
+// From DialerController.php:248-263 - Call Status Callback
+public function callStatus(Request $request)
+{
+    $callSid    = $request->input('CallSid');
+    $callStatus = $request->input('CallStatus');
+    
+    // Log the event
+    \Log::info('Twilio Call Status Callback', [
+        'CallSid'    => $callSid,
+        'CallStatus' => $callStatus,
+    ]);
+    
+    // Cache status for 5 minutes
+    \Cache::put('call_status_' . $callSid, $callStatus, now()->addMinutes(5));
+    
+    return response('OK', 200);
+}
+```
+
+Call statuses include:
+- `initiated` - Call is being set up
+- `ringing` - Phone is ringing
+- `answered` - Call was picked up
+- `completed` - Call has ended
+
+## Agent Availability
+
+The dialer pad automatically sets agent availability:
+
+```php
+// From DialerController.php:143-147 - Dialerpad
+public function dialerpad($my_number = null)
+{
+    updateAgentAvailability(auth()->id(), true);  // Mark agent as available
+    return view('backend.dialer.dialerpad', compact('my_number'));
+}
+```
+
+<Accordion title="How Availability Works">
+  - Opening the dialer automatically marks you as available
+  - Incoming calls route to available agents only
+  - Unavailable agents don't receive calls
+  - Close the dialer or log out to become unavailable
+</Accordion>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Test Audio" icon="volume-high">
+    Test your microphone and speakers before making important calls.
+  </Card>
+  
+  <Card title="Stable Connection" icon="wifi">
+    Use a reliable internet connection for best call quality.
+  </Card>
+  
+  <Card title="Chrome Browser" icon="chrome">
+    Use Chrome or Edge for best WebRTC compatibility.
+  </Card>
+  
+  <Card title="Review Recordings" icon="headphones">
+    Listen to call recordings to improve your communication.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No Audio" icon="volume-xmark">
+    - Check browser microphone permissions
+    - Verify your audio devices are working
+    - Try refreshing the page to regenerate the token
+  </Accordion>
+  
+  <Accordion title="Calls Not Connecting" icon="phone-slash">
+    - Verify your provider configuration
+    - Check that you have a valid capability token (TwiML app)
+    - Ensure your Twilio account is funded
+  </Accordion>
+  
+  <Accordion title="Poor Call Quality" icon="signal-weak">
+    - Check your internet connection speed
+    - Close other bandwidth-intensive applications
+    - Use a wired connection instead of WiFi if possible
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+<CardGroup cols={3}>
+  <Card title="Voice Campaigns" icon="bullhorn" href="/features/campaigns">
+    Launch automated calling campaigns
+  </Card>
+  
+  <Card title="Contact Management" icon="address-book" href="/features/contacts">
+    View contact info during calls
+  </Card>
+  
+  <Card title="Analytics" icon="chart-line" href="/features/analytics">
+    Analyze call performance and metrics
+  </Card>
+</CardGroup>

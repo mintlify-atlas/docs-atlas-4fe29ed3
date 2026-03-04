@@ -1,0 +1,562 @@
+---
+title: 'Payment Gateways'
+description: 'Configure and use multiple payment gateways for subscription payments in TelemanAI'
+icon: 'credit-card'
+---
+
+## Overview
+
+TelemanAI supports multiple payment gateways, allowing you to accept payments through various methods worldwide. The platform uses a flexible payment service architecture that makes it easy to process payments through your preferred gateway.
+
+<Note>
+Payment gateways must be configured by your administrator in the `.env` configuration file before they become available for use.
+</Note>
+
+## Supported Payment Gateways
+
+TelemanAI supports the following payment gateways:
+
+<CardGroup cols={3}>
+  <Card title="Stripe" icon="stripe">
+    Global payment processor supporting credit cards, debit cards, and digital wallets
+  </Card>
+  
+  <Card title="PayPal" icon="paypal">
+    Popular digital wallet and payment platform with worldwide coverage
+  </Card>
+  
+  <Card title="Razorpay" icon="indian-rupee-sign">
+    Leading payment gateway for India supporting UPI, cards, and net banking
+  </Card>
+  
+  <Card title="Flutterwave" icon="money-bill-wave">
+    African payment gateway supporting cards, mobile money, and bank transfers
+  </Card>
+  
+  <Card title="Paystack" icon="layer-group">
+    Modern payment infrastructure for Africa with card and bank account support
+  </Card>
+  
+  <Card title="Instamojo" icon="bolt">
+    Indian payment gateway for cards, UPI, wallets, and net banking
+  </Card>
+  
+  <Card title="Squad" icon="shield">
+    Nigerian payment processor supporting cards and bank transfers
+  </Card>
+  
+  <Card title="Mollie" icon="building">
+    European payment service provider with extensive local payment methods
+  </Card>
+  
+  <Card title="Square" icon="square">
+    Payment processing solution popular in North America
+  </Card>
+</CardGroup>
+
+## Payment Gateway Configuration
+
+Each payment gateway requires specific API credentials to function. These are configured in the `.env` file by your system administrator.
+
+### Stripe Configuration
+
+<Accordion title="Stripe Setup">
+  Stripe is a powerful payment processor that supports credit and debit cards globally.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  STRIPE="YES"  # Enable Stripe
+  STRIPE_ENVIRONMENT="sandbox"  # or "production"
+  STRIPE_KEY="pk_test_xxxxxxxxxxxxxxxxxxxx"  # Publishable key
+  STRIPE_SECRET="sk_test_xxxxxxxxxxxxxxxxxxxx"  # Secret key
+  ```
+
+  **Features:**
+  - Instant payment processing
+  - Support for major credit/debit cards
+  - PCI DSS compliant
+  - Built-in fraud protection
+  - Supports 135+ currencies
+
+  **Getting Credentials:**
+  1. Sign up at [stripe.com](https://stripe.com)
+  2. Navigate to **Developers** > **API keys**
+  3. Copy your **Publishable key** and **Secret key**
+  4. Use test keys for development, live keys for production
+
+  <Warning>
+  Never commit your Stripe secret key to version control. Keep it secure in your `.env` file.
+  </Warning>
+</Accordion>
+
+### PayPal Configuration
+
+<Accordion title="PayPal Setup">
+  PayPal enables users to pay using their PayPal balance, bank account, or credit card.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  PAYPAL="YES"  # Enable PayPal
+  PAYPAL_SANDBOX=true  # false for production
+  PAYPAL_CLIENT_ID="AfmUVc-q4RP6nHk42Zm5..."  # Client ID
+  PAYPAL_CLIENT_SECRET="EJjA_ANpnIRwPNUEgQhjZ..."  # Client Secret
+  PAYPAL_API_USERNAME="sb-oxtaj26870142@business.example.com"
+  PAYPAL_API_PASSWORD="X)23m2"
+  PAYPAL_CURRENCY="USD"  # Default currency
+  ```
+
+  **Features:**
+  - Trusted payment method worldwide
+  - Support for PayPal balance and linked accounts
+  - Buyer protection included
+  - Multiple currency support
+  - Mobile-optimized checkout
+
+  **Getting Credentials:**
+  1. Sign up for a [PayPal Business account](https://www.paypal.com/business)
+  2. Go to **Dashboard** > **Apps & Credentials**
+  3. Create a new app or use an existing one
+  4. Copy your **Client ID** and **Secret**
+  5. Use sandbox credentials for testing
+
+  <Info>
+  PayPal redirects users to PayPal's website for payment, then returns them to your application.
+  </Info>
+</Accordion>
+
+### Razorpay Configuration
+
+<Accordion title="Razorpay Setup">
+  Razorpay is India's leading payment gateway supporting multiple payment methods.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  RAZORPAY="YES"  # Enable Razorpay
+  RAZORPAY_KEY="rzp_test_vYLUhaqny75Hyj"  # Key ID
+  RAZORPAY_SECRET="qGdRYD6MnnPqZw0e2qoPvI52"  # Key Secret
+  ```
+
+  **Features:**
+  - UPI payments (Google Pay, PhonePe, etc.)
+  - Credit and debit cards
+  - Net banking
+  - Digital wallets (Paytm, Mobikwik, etc.)
+  - EMI options
+  - International cards
+
+  **Getting Credentials:**
+  1. Sign up at [razorpay.com](https://razorpay.com)
+  2. Complete KYC verification
+  3. Navigate to **Settings** > **API Keys**
+  4. Generate new API keys
+  5. Copy **Key Id** and **Key Secret**
+
+  <Note>
+  Razorpay requires webhook configuration for payment verification. The platform handles this automatically.
+  </Note>
+</Accordion>
+
+### Flutterwave Configuration
+
+<Accordion title="Flutterwave Setup">
+  Flutterwave provides payment infrastructure across Africa.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  FLUTTERWAVE="YES"  # Enable Flutterwave
+  FLW_PUBLIC_KEY="FLWPUBK_TEST-a844c48bd0b956..."  # Public key
+  FLW_SECRET_KEY="FLWSECK_TEST-17dd26a0a5dd91..."  # Secret key
+  FLW_SECRET_HASH="FLWSECK_TEST50130b584f67"  # Webhook hash
+  FLW_CURRENCY="NGN"  # Default currency (NGN, GHS, KES, etc.)
+  ```
+
+  **Features:**
+  - Cards (Visa, Mastercard, Verve)
+  - Mobile money (MTN, Vodafone, etc.)
+  - Bank accounts
+  - USSD payments
+  - Multiple African currencies
+
+  **Getting Credentials:**
+  1. Sign up at [flutterwave.com](https://flutterwave.com)
+  2. Complete business verification
+  3. Go to **Settings** > **API**
+  4. Copy **Public Key**, **Secret Key**, and **Encryption Key**
+</Accordion>
+
+### Paystack Configuration
+
+<Accordion title="Paystack Setup">
+  Paystack is a modern payment gateway for African businesses.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  PAYSTACK="YES"  # Enable Paystack
+  PAYSTACK_PUBLIC_KEY="pk_test_e02b119d219d9a..."  # Public key
+  PAYSTACK_SECRET_KEY="sk_test_03d279111dd4f1..."  # Secret key
+  PAYSTACK_PAYMENT_URL="https://api.paystack.co"  # API endpoint
+  MERCHANT_EMAIL="merchant@example.com"  # Your email
+  MERCHANT_CURRENCY="ZAR"  # Currency (NGN, GHS, ZAR, USD)
+  ```
+
+  **Features:**
+  - Card payments
+  - Bank transfers
+  - USSD
+  - Mobile money
+  - Subscriptions
+  - Split payments
+
+  **Getting Credentials:**
+  1. Sign up at [paystack.com](https://paystack.com)
+  2. Verify your business
+  3. Navigate to **Settings** > **API Keys & Webhooks**
+  4. Copy your test or live keys
+</Accordion>
+
+### Instamojo Configuration
+
+<Accordion title="Instamojo Setup">
+  Instamojo is an Indian payment gateway with simple integration.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  INSTAMOJO="YES"  # Enable Instamojo
+  IM_API_KEY="test_dc229039d2232a260a2df3f7502"  # API key
+  IM_AUTH_TOKEN="test_dc229039d2232a260a2df3f7502"  # Auth token
+  IM_URL="https://test.instamojo.com/api/1.1/"  # API URL
+  ```
+
+  **Features:**
+  - Credit/debit cards
+  - Net banking
+  - UPI
+  - Wallets
+  - EMI options
+
+  **Getting Credentials:**
+  1. Sign up at [instamojo.com](https://www.instamojo.com)
+  2. Go to **Settings** > **API & Plugins**
+  3. Generate API credentials
+  4. Copy **API Key** and **Auth Token**
+</Accordion>
+
+### Squad Configuration
+
+<Accordion title="Squad Setup">
+  Squad is a Nigerian payment gateway.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  SQUAD="YES"  # Enable Squad
+  SQUAD_PUBLIC_KEY="sandbox_pk_16ef5769ec3125..."  # Public key
+  SQUAD_SECRET_KEY="sandbox_sk_16ef5769ec3125..."  # Secret key
+  SQUAD_CURRENCY="NGN"  # Currency (NGN or USD)
+  SQUAD_API_URL="https://sandbox-api-d.squadco.com"  # API endpoint
+  ```
+
+  **Features:**
+  - Card payments
+  - Bank transfers
+  - Virtual accounts
+  - NGN and USD support
+
+  **Getting Credentials:**
+  1. Sign up at [squadco.com](https://squadco.com)
+  2. Navigate to **Settings** > **API Keys**
+  3. Generate or copy existing keys
+</Accordion>
+
+### Mollie Configuration
+
+<Accordion title="Mollie Setup">
+  Mollie is a European payment service provider.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  MOLLIE="YES"  # Enable Mollie
+  MOLLIE_KEY="test_nCwAr5tPC4xcBWQWc8xvE5MkF9v6bU"  # API key
+  MOLLIE_CURRENCY="EUR"  # Default currency
+  ```
+
+  **Features:**
+  - Credit cards
+  - iDEAL (Netherlands)
+  - SEPA bank transfers
+  - PayPal
+  - Apple Pay / Google Pay
+  - 30+ local payment methods across Europe
+
+  **Getting Credentials:**
+  1. Sign up at [mollie.com](https://www.mollie.com)
+  2. Go to **Developers** > **API keys**
+  3. Copy your test or live API key
+</Accordion>
+
+### Square Configuration
+
+<Accordion title="Square Setup">
+  Square is a popular payment processor in North America.
+
+  **Required Environment Variables:**
+
+  ```bash .env
+  SQUARE="YES"  # Enable Square
+  SQUARE_ACCESS_TOKEN="EAAAlwi-KmmA3y79Pea2Qjq_EdxcuI..."  # Access token
+  SQUARE_APPLICATION_ID="sandbox-sq0idb-8zVYwQ9yJz91..."  # Application ID
+  SQUARE_LOCATION_ID="LAF7XP58VW59W"  # Location ID
+  SQUARE_CURRENCY="USD"  # Currency
+  SQUARE_REDIRECT_URL="${APP_URL}/square/callback"  # Callback URL
+  ```
+
+  **Features:**
+  - Credit/debit cards
+  - Digital wallets
+  - ACH bank transfers
+  - Gift cards
+  - Buy now, pay later options
+
+  **Getting Credentials:**
+  1. Sign up at [squareup.com](https://squareup.com)
+  2. Go to **Developer Dashboard**
+  3. Create an application
+  4. Copy **Application ID**, **Access Token**, and **Location ID**
+</Accordion>
+
+## Payment Processing Flow
+
+Understand how payments are processed in TelemanAI:
+
+<Steps>
+  <Step title="User Selects Package">
+    User chooses a subscription package from the available options
+  </Step>
+  
+  <Step title="Gateway Selection">
+    User selects their preferred payment gateway from enabled options
+  </Step>
+  
+  <Step title="Payment Initialization">
+    TelemanAI sends payment details to the selected gateway:
+    - Amount
+    - Currency
+    - User email
+    - Description
+    - Return URL for callbacks
+  </Step>
+  
+  <Step title="Gateway Processing">
+    Payment gateway handles the transaction:
+    - For card payments: Process immediately
+    - For redirect methods (PayPal): Redirect user to gateway site
+    - For mobile money: Display payment instructions
+  </Step>
+  
+  <Step title="Payment Verification">
+    Gateway sends response back to TelemanAI:
+    - Success: Transaction ID and payment confirmation
+    - Failure: Error message and reason
+  </Step>
+  
+  <Step title="Subscription Activation">
+    On successful payment:
+    - Create subscription record
+    - Allocate package credits
+    - Set validity period
+    - Send confirmation email
+    - Create payment history entry
+  </Step>
+</Steps>
+
+### Payment Verification
+
+All payment gateways use secure verification methods:
+
+<Card title="Stripe" icon="stripe">
+  - Instant verification via API response
+  - Transaction ID provided immediately
+  - Webhook notifications for additional security
+</Card>
+
+<Card title="PayPal" icon="paypal">
+  - User redirected to PayPal
+  - Payment completed on PayPal site
+  - User returned to TelemanAI with payment confirmation
+  - Callback handler verifies payment with PayPal API
+</Card>
+
+<Card title="Razorpay" icon="indian-rupee-sign">
+  - Frontend checkout modal
+  - Payment signature verification
+  - Server-side confirmation via API
+  - Webhook for payment status updates
+</Card>
+
+<Info>
+All gateways use HTTPS encryption and follow PCI DSS compliance standards for secure payment processing.
+</Info>
+
+## Supported Currencies
+
+Different payment gateways support different currencies:
+
+| Gateway | Primary Currencies | Notes |
+|---------|-------------------|-------|
+| **Stripe** | USD, EUR, GBP, and 135+ others | Most flexible for international payments |
+| **PayPal** | USD, EUR, GBP, CAD, AUD, and 25+ others | Depends on merchant account country |
+| **Razorpay** | INR, USD | Best for Indian customers |
+| **Flutterwave** | NGN, GHS, KES, UGX, TZS, ZAR | African currencies |
+| **Paystack** | NGN, GHS, ZAR, USD | African focus with USD support |
+| **Instamojo** | INR | India only |
+| **Squad** | NGN, USD | Nigerian Naira and US Dollar |
+| **Mollie** | EUR and 30+ others | Focused on European payments |
+| **Square** | USD, CAD, GBP, AUD, JPY | North America and select countries |
+
+<Warning>
+Ensure your package prices are set in a currency supported by your enabled payment gateways.
+</Warning>
+
+## Testing Payments
+
+All payment gateways provide test/sandbox modes for development:
+
+### Test Mode Best Practices
+
+<Steps>
+  <Step title="Enable Test Mode">
+    Set gateway to test/sandbox mode in `.env`:
+    ```bash
+    STRIPE_ENVIRONMENT="sandbox"
+    PAYPAL_SANDBOX=true
+    ```
+  </Step>
+  
+  <Step title="Use Test Credentials">
+    Always use test API keys during development:
+    - Stripe: Keys starting with `pk_test_` and `sk_test_`
+    - Razorpay: Keys starting with `rzp_test_`
+    - Others: Sandbox or test credentials from dashboard
+  </Step>
+  
+  <Step title="Test Card Numbers">
+    Use gateway-provided test cards:
+    
+    **Stripe Test Cards:**
+    - Success: 4242 4242 4242 4242
+    - Decline: 4000 0000 0000 0002
+    - Requires Auth: 4000 0027 6000 3184
+    
+    **Razorpay Test Cards:**
+    - Success: 4111 1111 1111 1111
+    - OTP: 1234 (for test mode)
+  </Step>
+  
+  <Step title="Verify Callbacks">
+    Test payment callbacks and webhook handling:
+    - Successful payments
+    - Failed payments
+    - Pending payments
+    - Refunds
+  </Step>
+  
+  <Step title="Switch to Production">
+    When ready for live payments:
+    - Replace test keys with production keys
+    - Set environment to production
+    - Test with small real payment
+    - Monitor first few transactions closely
+  </Step>
+</Steps>
+
+## Troubleshooting Payment Issues
+
+<AccordionGroup>
+  <Accordion title="Payment gateway not appearing">
+    **Problem**: Payment gateway doesn't show up as an option
+    
+    **Solutions**:
+    - Verify gateway is enabled in `.env`: `STRIPE="YES"`
+    - Check API credentials are correctly configured
+    - Clear application cache: `php artisan cache:clear`
+    - Verify gateway is registered in `PaymentService.php`
+  </Accordion>
+  
+  <Accordion title="Payment fails with API error">
+    **Problem**: Payment returns an error from the gateway
+    
+    **Solutions**:
+    - Verify API credentials are correct and active
+    - Check if using correct environment (test vs production)
+    - Ensure payment amount meets gateway minimums
+    - Review gateway dashboard for specific error messages
+    - Check currency is supported by the gateway
+  </Accordion>
+  
+  <Accordion title="Payment succeeds but subscription not activated">
+    **Problem**: Payment completes but package not assigned
+    
+    **Solutions**:
+    - Check payment callback URL is accessible
+    - Verify webhook endpoints are configured
+    - Review application logs for errors
+    - Manually verify payment in gateway dashboard
+    - Check database for payment_histories record
+    - Contact support with transaction ID
+  </Accordion>
+  
+  <Accordion title="Callback URL errors">
+    **Problem**: Payment redirects fail or timeout
+    
+    **Solutions**:
+    - Verify callback URLs are correctly configured in `.env`
+    - Ensure URLs are accessible from internet (not localhost)
+    - Check SSL certificate is valid
+    - Add callback URLs to gateway dashboard
+    - Test URL accessibility with curl or Postman
+  </Accordion>
+  
+  <Accordion title="Currency mismatch errors">
+    **Problem**: Gateway rejects payment due to currency issues
+    
+    **Solutions**:
+    - Verify gateway supports the payment currency
+    - Check currency is correctly set in `.env`
+    - Ensure package prices use supported currency
+    - Convert amounts if necessary
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Warning>
+Follow these security practices when handling payment gateways:
+</Warning>
+
+1. **Never expose API secrets** - Keep credentials in `.env` file only
+2. **Use HTTPS** - Always serve your application over SSL
+3. **Validate callbacks** - Verify payment signatures and IDs
+4. **Log transactions** - Maintain audit trail of all payments
+5. **Use test mode** - Never test with production credentials
+6. **Rotate keys regularly** - Change API keys periodically
+7. **Monitor for fraud** - Watch for suspicious payment patterns
+8. **Comply with regulations** - Follow PCI DSS and local payment laws
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Subscription Packages" icon="box" href="/subscription/packages">
+    Learn about package structure and pricing tiers
+  </Card>
+  
+  <Card title="Usage Limits" icon="gauge" href="/subscription/usage-limits">
+    Understand credit consumption and usage tracking
+  </Card>
+</CardGroup>

@@ -1,0 +1,777 @@
+---
+title: Configuration Guide
+description: Complete environment variable configuration for TelemanAI including integrations, payment gateways, and API keys
+---
+
+## Overview
+
+TelemanAI uses environment variables in the `.env` file for all configuration. This guide covers all available configuration options extracted from your `.env.example` file.
+
+<Warning>
+  Never commit your `.env` file to version control. It contains sensitive credentials and API keys.
+</Warning>
+
+## Application Configuration
+
+### Basic Application Settings
+
+```bash
+APP_NAME="TelemanAI - Telemarketing Conversational AI Application"
+APP_ENV=production
+APP_KEY=base64:your_generated_key_here
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+```
+
+**Configuration Details**:
+
+- **APP_NAME**: Application name shown in emails, UI, and notifications
+- **APP_ENV**: Environment (`local`, `staging`, `production`)
+- **APP_KEY**: Encryption key (generate with `php artisan key:generate`)
+- **APP_DEBUG**: Debug mode - **MUST be `false` in production**
+- **APP_URL**: Full URL of your application (with https://)
+
+<Note>
+  The APP_KEY is critical for security. Never share it or commit it to version control.
+</Note>
+
+### Application Metadata
+
+```bash
+AUTHOR="The Code Studio"
+VERSION="6.0.0"
+DEMO="NO"
+```
+
+- **AUTHOR**: Platform author/owner name
+- **VERSION**: Current version number
+- **DEMO**: Set to `YES` to enable demo mode (restricts certain actions)
+
+### Installation & Developer Settings
+
+```bash
+APP_INSTALL="YES"
+TIMEZONE="Asia/Dhaka"
+
+DEBUGBAR_ENABLED="false"
+IGNITION_EDITOR="vscode"
+```
+
+- **APP_INSTALL**: Set to `YES` to show installation wizard, `NO` after installation
+- **TIMEZONE**: Default timezone (use PHP timezone identifiers)
+- **DEBUGBAR_ENABLED**: Enable Laravel Debugbar (development only)
+- **IGNITION_EDITOR**: Editor for error page links (`vscode`, `phpstorm`, etc.)
+
+### Logging Configuration
+
+```bash
+LOG_CHANNEL=stack
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=error
+```
+
+- **LOG_CHANNEL**: Logging channel (`stack`, `single`, `daily`, `syslog`)
+- **LOG_LEVEL**: Minimum level to log (`debug`, `info`, `notice`, `warning`, `error`, `critical`)
+
+<Info>
+  Use `LOG_LEVEL=error` in production to reduce log file size. Use `debug` only when troubleshooting.
+</Info>
+
+## Database Configuration
+
+### Primary Database
+
+```bash
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=teleman_ai
+DB_USERNAME=your_db_user
+DB_PASSWORD=your_secure_password
+DB_PREFIX=""
+```
+
+**Configuration Details**:
+
+- **DB_CONNECTION**: Database driver (`mysql`, `pgsql`, `sqlite`)
+- **DB_HOST**: Database server hostname
+- **DB_PORT**: Database port (3306 for MySQL)
+- **DB_DATABASE**: Main database name
+- **DB_USERNAME**: Database user
+- **DB_PASSWORD**: Database password
+- **DB_PREFIX**: Table prefix (optional)
+
+### Multi-Tenant Database Configuration
+
+```bash
+TENANT_DATABASE="${DB_USERNAME}"
+TENANT_USERNAME="${DB_USERNAME}"
+TENANT_PASSWORD="${DB_PASSWORD}"
+```
+
+<Note>
+  For multi-tenant SaaS deployment, tenant databases are created automatically. Ensure the database user has CREATE database privileges.
+</Note>
+
+## Cache & Session Configuration
+
+```bash
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+FILESYSTEM_DRIVER=local
+QUEUE_CONNECTION=database
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+```
+
+**Driver Options**:
+
+- **CACHE_DRIVER**: `file`, `redis`, `memcached`, `database`
+- **QUEUE_CONNECTION**: `sync`, `database`, `redis`, `sqs`
+- **SESSION_DRIVER**: `file`, `cookie`, `database`, `redis`
+- **SESSION_LIFETIME**: Session timeout in minutes
+
+<Info>
+  For production with multiple servers, use `redis` for cache and sessions to ensure consistency.
+</Info>
+
+### Redis Configuration
+
+```bash
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+```
+
+Enable Redis for better performance:
+```bash
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+```
+
+### Memcached Configuration
+
+```bash
+MEMCACHED_HOST=127.0.0.1
+```
+
+## Email Configuration
+
+### SMTP Settings
+
+```bash
+MAIL_MAILER="smtp"
+MAIL_HOST="smtp.gmail.com"
+MAIL_PORT="587"
+MAIL_USERNAME="your_email@gmail.com"
+MAIL_PASSWORD="your_app_password"
+MAIL_ENCRYPTION="tls"
+MAIL_FROM_ADDRESS="noreply@your-domain.com"
+MAIL_FROM_NAME="TelemanAI"
+```
+
+**Common SMTP Providers**:
+
+**Gmail**:
+```bash
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_ENCRYPTION=tls
+```
+
+**SendGrid**:
+```bash
+MAIL_HOST=smtp.sendgrid.net
+MAIL_PORT=587
+MAIL_USERNAME=apikey
+MAIL_PASSWORD=your_sendgrid_api_key
+```
+
+**Mailgun**:
+```bash
+MAIL_HOST=smtp.mailgun.org
+MAIL_PORT=587
+```
+
+**AWS SES**:
+```bash
+MAIL_HOST=email-smtp.us-east-1.amazonaws.com
+MAIL_PORT=587
+```
+
+<Warning>
+  For Gmail, you must create an App Password, not use your regular password. Enable 2FA and generate an app password in your Google Account settings.
+</Warning>
+
+### Subscription Expiry Alerts
+
+```bash
+EXPRITY_ALERT_MAIL_DAY="3"
+TRIAL_PERIOD_DAYS="7"
+```
+
+- **EXPRITY_ALERT_MAIL_DAY**: Days before expiry to send alert emails
+- **TRIAL_PERIOD_DAYS**: Default trial period for new subscriptions
+
+## Twilio Configuration (Voice & SMS)
+
+### Basic Twilio Settings
+
+```bash
+TWILIO_ACCOUNT_SID="AC085429e8d240706a0826fff4674535d3"
+TWILIO_AUTH_TOKEN="your_twilio_auth_token"
+TWILIO_NUMBER="+1234567890"
+```
+
+<Steps>
+  <Step title="Get Twilio Credentials">
+    1. Sign up at [twilio.com](https://www.twilio.com)
+    2. Navigate to Console Dashboard
+    3. Copy Account SID and Auth Token
+    4. Purchase a phone number with Voice capability
+  </Step>
+
+  <Step title="Configure TelemanAI">
+    Add credentials to `.env` file
+  </Step>
+
+  <Step title="Set Webhook URLs">
+    Configure Twilio webhooks to point to your application:
+    - Voice URL: `https://your-domain.com/api/twilio/voice`
+    - Status Callback: `https://your-domain.com/api/twilio/status`
+  </Step>
+</Steps>
+
+### SIP Trunk Configuration
+
+```bash
+SIP_TRUNK="YES"
+TWILIO_APP_SID="APxxxxxxxxxxxxx"
+TWILIO_SIP_ENABLED=true
+TWILIO_SIP_DEFAULT_DOMAIN="your-domain.sip.twilio.com"
+TWILIO_SIP_SECURE=true
+TWILIO_SIP_DEFAULT_AUTH_TYPE="IP_ACL"
+TWILIO_SIP_VOICE_URL="https://your-domain.com/api/sip/voice"
+TWILIO_SIP_LOGGING=true
+```
+
+**SIP Trunk Setup**:
+
+<Steps>
+  <Step title="Create Twilio Elastic SIP Trunk">
+    1. Go to Twilio Console > Elastic SIP Trunking
+    2. Create new trunk
+    3. Note the SIP domain
+  </Step>
+
+  <Step title="Configure Origination">
+    Set origination URI to your PBX or SIP server
+  </Step>
+
+  <Step title="Configure Termination">
+    Add your server IP to termination ACL
+  </Step>
+
+  <Step title="Update Configuration">
+    Add trunk details to `.env`
+  </Step>
+</Steps>
+
+<Info>
+  SIP trunks allow you to connect existing phone systems and PBX infrastructure to TelemanAI.
+</Info>
+
+## AI & Voice Configuration
+
+### VAPI Integration
+
+```bash
+VAPI_API_KEY="7cda2427-44a8-4c6d-9f43-06a8f831cced"
+VAPI_PUBLIC_KEY="613631a3-326c-43fa-8b6a-383e07327b02"
+```
+
+**VAPI Setup**:
+
+1. Sign up at [vapi.ai](https://vapi.ai)
+2. Create an account and get API keys
+3. Configure AI assistants in VAPI dashboard
+4. Add keys to `.env`
+
+<Note>
+  VAPI provides the conversational AI engine that powers intelligent voice interactions in campaigns.
+</Note>
+
+### OpenAI Integration
+
+```bash
+OPENAI_API_KEY="sk-proj-xxxxxxxxxxxxx"
+```
+
+- Used for advanced AI features
+- Get API key from [platform.openai.com](https://platform.openai.com)
+
+## Phone Verification Services
+
+### Telesign
+
+```bash
+TELESIGN_CUSTOMER_ID="your_customer_id"
+TELESIGN_API_KEY="your_api_key"
+TELESIGN_ACTIVE="YES"
+```
+
+Enable for phone number validation and verification.
+
+### MessageBird
+
+```bash
+MESSAGEBIRD_ACCESS_KEY="your_access_key"
+MESSAGEBIRD_ACTIVE="YES"
+```
+
+Alternative phone verification service.
+
+<Info>
+  Phone verification services help validate phone numbers before running campaigns, reducing bounce rates.
+</Info>
+
+## Payment Gateway Configuration
+
+### Stripe
+
+```bash
+STRIPE_ENVIRONMENT="live"
+STRIPE_KEY="pk_live_xxxxxxxxxxxxx"
+STRIPE_SECRET="sk_live_xxxxxxxxxxxxx"
+STRIPE="YES"
+```
+
+**Setup**:
+1. Create account at [stripe.com](https://stripe.com)
+2. Get API keys from Dashboard > Developers > API keys
+3. For testing, use `sandbox` environment with `pk_test_` and `sk_test_` keys
+
+### PayPal
+
+```bash
+PAYPAL_SANDBOX=false
+PAYPAL_CLIENT_ID="your_client_id"
+PAYPAL_CLIENT_SECRET="your_client_secret"
+PAYPAL_API_USERNAME="your_api_username"
+PAYPAL_API_PASSWORD="your_api_password"
+PAYPAL_CURRENCY="USD"
+PAYPAL="YES"
+```
+
+- Set `PAYPAL_SANDBOX=true` for testing
+- Get credentials from [developer.paypal.com](https://developer.paypal.com)
+
+### Razorpay (India)
+
+```bash
+RAZORPAY_KEY="rzp_live_xxxxxxxxxxxxx"
+RAZORPAY_SECRET="your_secret_key"
+RAZORPAY="YES"
+```
+
+### Flutterwave (Africa)
+
+```bash
+FLW_PUBLIC_KEY="FLWPUBK-xxxxxxxxxxxxx"
+FLW_SECRET_KEY="FLWSECK-xxxxxxxxxxxxx"
+FLW_SECRET_HASH="your_secret_hash"
+FLW_CURRENCY="NGN"
+FLUTTERWAVE="YES"
+```
+
+Supports: NGN, GHS, KES, ZAR, USD, and more.
+
+### Paystack (Africa)
+
+```bash
+PAYSTACK_PUBLIC_KEY="pk_live_xxxxxxxxxxxxx"
+PAYSTACK_SECRET_KEY="sk_live_xxxxxxxxxxxxx"
+PAYSTACK_PAYMENT_URL="https://api.paystack.co"
+MERCHANT_EMAIL="billing@your-domain.com"
+MERCHANT_CURRENCY="ZAR"
+PAYSTACK="YES"
+```
+
+Popular in Nigeria, South Africa, Ghana, and Kenya.
+
+### Instamojo (India)
+
+```bash
+IM_API_KEY="your_api_key"
+IM_AUTH_TOKEN="your_auth_token"
+IM_URL="https://www.instamojo.com/api/1.1/"
+INSTAMOJO="YES"
+```
+
+For testing, use `https://test.instamojo.com/api/1.1/`
+
+### SSLCommerz (Bangladesh)
+
+```bash
+API_DOMAIN_URL="https://securepay.sslcommerz.com"
+STORE_ID="your_store_id"
+STORE_PASSWORD="your_store_password"
+SSL_COMMERZ="YES"
+```
+
+For testing: `https://sandbox.sslcommerz.com`
+
+### Braintree
+
+```bash
+BT_ENVIRONMENT="production"
+BT_MERCHANT_ID="your_merchant_id"
+BT_PUBLIC_KEY="your_public_key"
+BT_PRIVATE_KEY="your_private_key"
+BRAINTREE="YES"
+```
+
+For testing, use `BT_ENVIRONMENT="sandbox"`
+
+### Mollie (Europe)
+
+```bash
+MOLLIE_KEY="live_xxxxxxxxxxxxx"
+MOLLIE_CURRENCY="EUR"
+MOLLIE="YES"
+```
+
+Popular in Netherlands, Belgium, and other EU countries.
+
+### Square
+
+```bash
+SQUARE_ACCESS_TOKEN="your_access_token"
+SQUARE_APPLICATION_ID="your_application_id"
+SQUARE_LOCATION_ID="your_location_id"
+SQUARE_CURRENCY="USD"
+SQUARE_REDIRECT_URL="${APP_URL}/square/callback"
+SQUARE="YES"
+```
+
+### Squad (Nigeria)
+
+```bash
+SQUAD_PUBLIC_KEY="your_public_key"
+SQUAD_SECRET_KEY="your_secret_key"
+SQUAD_CURRENCY="NGN"
+SQUAD_API_URL="https://api-d.squadco.com"
+SQUAD="YES"
+```
+
+For testing: `https://sandbox-api-d.squadco.com`
+
+<Warning>
+  Always use test/sandbox credentials during development. Never test with real payment credentials.
+</Warning>
+
+## Feature Toggles
+
+```bash
+SMS_MARKETING="YES"
+SHOP="YES"
+KYC="NO"
+PERFEX="NO"
+```
+
+- **SMS_MARKETING**: Enable/disable SMS campaign features
+- **SHOP**: Enable e-commerce features
+- **KYC**: Enable Know Your Customer verification
+- **PERFEX**: Enable Perfex CRM integration
+
+## UI & Frontend Configuration
+
+```bash
+DASHBOARD_UI="EXTENDED"
+FRONTEND_THEME="ACTIVE"
+DEFAULT_LANGUAGE="en"
+```
+
+- **DASHBOARD_UI**: `EXTENDED` (full width) or `CONTAINER` (boxed)
+- **FRONTEND_THEME**: `ACTIVE` (show frontend) or `DEACTIVE` (admin only)
+- **DEFAULT_LANGUAGE**: Default language code (`en`, `es`, `fr`, etc.)
+
+### React Configuration
+
+```bash
+REACT_BASE_URL="${APP_URL}"
+```
+
+Base URL for React components.
+
+## Third-Party Services
+
+### Google OAuth
+
+```bash
+GOOGLE_CLIENT_ID="your_client_id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your_client_secret"
+GOOGLE_REDIRECT_URI="${APP_URL}/google/callback"
+```
+
+**Setup**:
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create OAuth 2.0 credentials
+3. Add authorized redirect URI
+
+### Google reCAPTCHA
+
+```bash
+GOOGLE_RECAPTCHA_KEY="your_site_key"
+GOOGLE_RECAPTCHA_SECRET="your_secret_key"
+GOOGLE_RECAPTCHA="YES"
+```
+
+Protects forms from spam and bots.
+
+### Pusher (Real-time)
+
+```bash
+PUSHER_APP_ID="your_app_id"
+PUSHER_APP_KEY="your_app_key"
+PUSHER_APP_SECRET="your_app_secret"
+PUSHER_APP_CLUSTER="mt1"
+
+MIX_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
+MIX_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
+```
+
+Enables real-time notifications and updates.
+
+### AWS Services
+
+```bash
+AWS_ACCESS_KEY_ID="your_access_key"
+AWS_SECRET_ACCESS_KEY="your_secret_key"
+AWS_DEFAULT_REGION="us-east-1"
+AWS_BUCKET="your_bucket_name"
+AWS_USE_PATH_STYLE_ENDPOINT=false
+```
+
+For S3 file storage and SES email.
+
+### Sentry (Error Tracking)
+
+```bash
+SENTRY_LARAVEL_DSN="https://xxxxx@sentry.io/xxxxx"
+SENTRY_TRACES_SAMPLE_RATE=1.0
+```
+
+Monitor and track application errors in production.
+
+## cPanel Configuration
+
+```bash
+CPANEL="YES"
+CPANEL_USERNAME="your_cpanel_username"
+CPANEL_PASSWORD="your_cpanel_password"
+CPANEL_PRIVILEGED_USER="root"
+YOUR_DOMAIN="your-domain.com"
+```
+
+<Note>
+  Enable cPanel integration for automatic subdomain creation and SSL management for multi-tenant deployments.
+</Note>
+
+## Security Configuration
+
+### SaaS License Key
+
+```bash
+SAAS_KEY="$2a$12$pkLmD5jZdxd6bSNcTg9YT.g2mXz5gS8JTArdIg68c8RK/d7w2y2Gu"
+```
+
+License key for SaaS features (provided by The Code Studio).
+
+### Development Mode
+
+```bash
+DEVELOPMENT_MODE="NO"
+DEV_MODE="NO"
+```
+
+<Warning>
+  Always set to "NO" in production to prevent security vulnerabilities.
+</Warning>
+
+## Configuration Best Practices
+
+### Security Checklist
+
+<Steps>
+  <Step title="Environment File Security">
+    ```bash
+    # Protect .env file
+    chmod 600 .env
+    chown www-data:www-data .env
+    
+    # Ensure .env is in .gitignore
+    echo ".env" >> .gitignore
+    ```
+  </Step>
+
+  <Step title="Production Settings">
+    Verify these settings for production:
+    ```bash
+    APP_ENV=production
+    APP_DEBUG=false
+    DEBUGBAR_ENABLED=false
+    DEVELOPMENT_MODE="NO"
+    DEV_MODE="NO"
+    ```
+  </Step>
+
+  <Step title="Use Strong Credentials">
+    - Generate strong database passwords (20+ characters)
+    - Use different passwords for each service
+    - Store backup credentials securely
+    - Rotate API keys regularly
+  </Step>
+
+  <Step title="Enable HTTPS">
+    ```bash
+    APP_URL=https://your-domain.com
+    # All payment gateways require HTTPS
+    ```
+  </Step>
+
+  <Step title="Configure Logging">
+    ```bash
+    LOG_LEVEL=error
+    LOG_CHANNEL=daily
+    ```
+    
+    Regularly monitor logs:
+    ```bash
+    tail -f storage/logs/laravel.log
+    ```
+  </Step>
+</Steps>
+
+### Performance Optimization
+
+```bash
+# Use Redis for better performance
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+
+# Cache configuration
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+### Environment-Specific Configurations
+
+**Development**:
+```bash
+APP_ENV=local
+APP_DEBUG=true
+DEBUGBAR_ENABLED=true
+LOG_LEVEL=debug
+```
+
+**Staging**:
+```bash
+APP_ENV=staging
+APP_DEBUG=true
+LOG_LEVEL=info
+# Use test payment credentials
+```
+
+**Production**:
+```bash
+APP_ENV=production
+APP_DEBUG=false
+DEBUGBAR_ENABLED=false
+LOG_LEVEL=error
+# Use live payment credentials
+```
+
+## Verifying Configuration
+
+### Test Database Connection
+
+```bash
+php artisan tinker
+>>> DB::connection()->getPdo();
+```
+
+### Test Email Configuration
+
+```bash
+php artisan tinker
+>>> Mail::raw('Test email', function($msg) { $msg->to('test@example.com')->subject('Test'); });
+```
+
+### Test Queue Workers
+
+```bash
+php artisan queue:work --once
+```
+
+### View Current Configuration
+
+```bash
+# View all config
+php artisan config:show
+
+# View specific config
+php artisan tinker
+>>> config('database.connections.mysql')
+>>> config('services.twilio')
+```
+
+## Troubleshooting Configuration Issues
+
+### Clear Configuration Cache
+
+```bash
+# Clear all caches
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan route:clear
+```
+
+### Common Configuration Errors
+
+**"Base table or view not found"**
+- Run migrations: `php artisan migrate`
+- Check database credentials in `.env`
+
+**"No application encryption key"**
+- Generate key: `php artisan key:generate`
+
+**Payment gateway not working**
+- Verify credentials are correct
+- Check if gateway is enabled: `STRIPE="YES"`
+- Ensure APP_URL uses HTTPS
+- Check webhook URLs are configured
+
+**Emails not sending**
+- Test SMTP connection
+- Check firewall allows outbound port 587/465
+- Verify MAIL_FROM_ADDRESS is valid
+- Check spam folder
+
+## Next Steps
+
+After configuration:
+
+1. **Test all integrations**: Verify payment gateways, Twilio, VAPI
+2. **Set up monitoring**: Configure Sentry for error tracking
+3. **Create first campaign**: Test the full workflow
+4. **Configure backups**: Set up automated database backups
+5. **Review security**: Run security audit checklist
+
+<Info>
+  For operational guidance and campaign creation, refer to the User Guide sections.
+</Info>

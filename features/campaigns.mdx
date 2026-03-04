@@ -1,0 +1,365 @@
+---
+title: Voice Campaigns
+description: Create and manage automated voice campaigns to reach your contacts at scale
+icon: bullhorn
+---
+
+## Overview
+
+TelemanAI's voice campaign system allows you to create, schedule, and manage automated voice calling campaigns. Reach thousands of contacts with personalized voice messages, track responses in real-time, and optimize your outreach strategy.
+
+<CardGroup cols={2}>
+  <Card title="Campaign Types" icon="list">
+    Create TwiML, audio, or AI-powered voice campaigns
+  </Card>
+  <Card title="Scheduling" icon="clock">
+    Schedule campaigns for future dates or run immediately
+  </Card>
+  <Card title="Lead Tracking" icon="chart-line">
+    Monitor campaign performance and lead status in real-time
+  </Card>
+  <Card title="Provider Selection" icon="phone">
+    Choose from multiple Twilio providers for optimal delivery
+  </Card>
+</CardGroup>
+
+## Creating a Campaign
+
+### Basic Campaign Setup
+
+To create a new voice campaign, you'll need to provide:
+
+<Steps>
+  <Step title="Campaign Details">
+    Provide a **name** and **description** for your campaign to help you identify it later.
+  </Step>
+  
+  <Step title="Select Contact Group">
+    Choose which contact group to target. Groups must be created in advance with your contacts.
+  </Step>
+  
+  <Step title="Choose Provider">
+    Select the Twilio provider to use for making calls. Each provider is linked to your Twilio account.
+  </Step>
+  
+  <Step title="Configure Voice Content">
+    Choose how your message will be delivered (see Campaign Types below).
+  </Step>
+</Steps>
+
+### Campaign Types
+
+TelemanAI supports three types of voice campaigns:
+
+<AccordionGroup>
+  <Accordion title="Text-to-Speech (TwiML)" icon="message">
+    Use Twilio's text-to-speech engine to convert your message into speech.
+    
+    ```php
+    // Example from CampaignController.php:60-61
+    $campaign->say = $request->say;  // Your text message
+    $campaign->expectation = $request->expectation;  // Expected response
+    ```
+    
+    **Best for:** Simple announcements, reminders, and notifications where you need to quickly update messaging.
+  </Accordion>
+  
+  <Accordion title="Audio File Upload" icon="file-audio">
+    Upload a pre-recorded audio file (MP3, WAV) for a professional, branded experience.
+    
+    ```php
+    // Example from CampaignController.php:63-67
+    if ($request->hasFile('audio')) {
+        $campaign->audio = env('APP_URL').'/'.audioUpload($request->audio, '/audio');
+    } else {
+        $campaign->audio = $request->audio_url;  // Or provide a URL
+    }
+    ```
+    
+    **Best for:** Marketing campaigns, brand consistency, and complex messages requiring professional voice talent.
+  </Accordion>
+  
+  <Accordion title="Custom TwiML XML" icon="code">
+    Advanced users can provide custom TwiML XML for complex call flows with menu options.
+    
+    ```php
+    // Example from CampaignController.php:310
+    createUserXMLfile($campaign->say, $campaign->audio, $file_name);
+    $campaign->xml = '/public/voices/'.$file_name.'.xml';
+    ```
+    
+    **Best for:** Interactive voice response (IVR) systems, surveys, and multi-step call flows.
+  </Accordion>
+</AccordionGroup>
+
+## Campaign Scheduling
+
+### Immediate Execution
+
+Start your campaign immediately by clicking the "Start Campaign" button. The system will:
+
+<Steps>
+  <Step title="Validate Configuration">
+    Check that your campaign has a group and provider assigned
+  </Step>
+  
+  <Step title="Check Balance">
+    Verify you have sufficient account balance for the campaign
+  </Step>
+  
+  <Step title="Verify Quota">
+    Ensure you haven't exceeded your hourly calling quota
+  </Step>
+  
+  <Step title="Begin Calling">
+    Start making calls to all contacts in the selected group
+  </Step>
+</Steps>
+
+```php
+// From CampaignController.php:90-141 - Campaign Start Process
+public function start_campaign($campaign_id, $slug = null)
+{
+    $campaign = Campaign::where('id', $campaign_id)->first();
+    
+    // Balance check
+    if (check_balance($campaign->user_id) == false) {
+        return 'Insufficient balance';
+    }
+    
+    // Group and provider validation
+    if ($campaign->group_id == null || $campaign->provider == null) {
+        return 'Campaign has no group or provider';
+    }
+    
+    // Hourly quota check
+    if (check_quota_hourly($campaign->user_id, $campaign->provider) == 'crossed') {
+        return 'Hourly quota crossed';
+    }
+    
+    // Schedule the campaign
+    $start = new CampaignSchedule;
+    $start->campaign_id = $campaign_id;
+    $start->group_id = $campaign->group_id;
+    $start->provider = $campaign->provider;
+    $start->status = 'PENDING';
+    $start->save();
+}
+```
+
+### Future Scheduling
+
+Schedule campaigns to run at specific future dates and times:
+
+```php
+// From CampaignController.php:595-623 - Add Multiple Schedules
+CampaignSchedule::create([
+    'campaign_id' => $campaign->id,
+    'user_id' => auth()->id(),
+    'group_id' => $campaign->group_id,
+    'provider' => $campaign->provider,
+    'start_at' => Carbon::parse($start_at),
+    'status' => 'PENDING',
+]);
+```
+
+<Note>
+  You can schedule multiple execution times for the same campaign. Each schedule is tracked independently.
+</Note>
+
+## Campaign Monitoring
+
+### Campaign Status
+
+Campaigns can have the following statuses:
+
+| Status | Description |
+|--------|-------------|
+| `PENDING` | Campaign is scheduled but not yet started |
+| `RUNNING` | Campaign is actively making calls |
+| `COMPLETED` | All calls have been attempted |
+| `PAUSED` | Campaign has been temporarily stopped |
+
+### Real-Time Call Status
+
+During campaign execution, you can monitor:
+
+- **Total Contacts:** Number of contacts in the target group
+- **Calls Made:** Number of calls attempted
+- **Successful Connections:** Calls that were answered
+- **Failed Calls:** Calls that didn't connect
+- **In Progress:** Currently active calls
+
+### Lead Management
+
+Track individual lead responses during voice campaigns:
+
+```php
+// From CampaignController.php:401-448 - Lead Status Tracking
+public function voice_campaign_lead(Request $request)
+{
+    $voice = CampaignVoice::where('user_id', Auth::id())
+                          ->where('campaign_id', $request->campaign_id)
+                          ->where('contact_id', $request->phone)
+                          ->updateOrCreate([
+                              'status' => $request->status  // interested, not_interested, callback, etc.
+                          ]);
+    
+    // Log the status change
+    voice_campaign_status_log($request->campaign_id, $request->phone, $request->status);
+}
+```
+
+<Accordion title="Available Lead Statuses">
+  Track leads with these statuses during your campaign:
+  - **Interested** - Contact expressed interest
+  - **Not Interested** - Contact declined
+  - **Callback** - Contact requested a callback
+  - **Wrong Number** - Invalid contact information
+  - **Voicemail** - Call went to voicemail
+  - **No Answer** - Contact didn't answer
+  - **Busy** - Line was busy
+</Accordion>
+
+## Test Calling
+
+Before launching a full campaign, test your setup:
+
+```php
+// From CampaignController.php:147-226 - Test Call Feature
+public function dev_make_call($campaign_id, $slug)
+{
+    $campaign = CampaignSchedule::where('campaign_id', $campaign_id)
+                                ->with('contacts')
+                                ->first();
+    
+    // Make a test call to the first contact only
+    foreach ($campaign->contacts->take(1) as $camp) {
+        twilio_calling(
+            $campaign->provider,
+            phone_number($camp->contact_id),
+            true,
+            campaign_audio($campaign_id),
+            $campaign->user_id
+        );
+    }
+}
+```
+
+<Warning>
+  Test calls still consume your account balance and count toward your hourly quota. Use sparingly.
+</Warning>
+
+## Exporting Campaign Results
+
+Export campaign leads and results for analysis:
+
+```php
+// From CampaignController.php:470-482 - Export Leads
+public function leads_export($campaign_id)
+{
+    store_leads_export_history($campaign_id);
+    return Excel::download(new LeadsExport($campaign_id), 'leads.csv');
+}
+```
+
+Exported data includes:
+- Contact name and phone number
+- Call status and timestamp
+- Lead status classification
+- Campaign information
+- Call duration and cost
+
+## SMS Follow-Up
+
+Send SMS messages to contacts during or after voice campaigns:
+
+```php
+// From CampaignController.php:495-593 - SMS Integration
+public function send_sms(Request $request)
+{
+    // Validate phone number format
+    $phone = phone_number($request->phone_number);
+    if (substr($phone, 0, 1) != '+') {
+        $phone = '+'.$phone;
+    }
+    
+    // Check SMS cost for the country
+    $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+    $NumberProto = $phoneUtil->parse($phone, null);
+    
+    // Send SMS via Twilio
+    twilioSendSMS($request->campaign_id, $phone, $request->message);
+    
+    // Log SMS status
+    CampaignSmsStatusLog($request->campaign_id, $request->phone_number, 
+                         Auth::id(), getUserInfo(Auth::id())->name, 
+                         $request->message);
+    
+    // Deduct credit from account
+    deduct_credit_by_using_sms($cost);
+}
+```
+
+<Note>
+  SMS messages are billed separately based on the destination country. Check pricing before sending bulk SMS.
+</Note>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Test First" icon="flask">
+    Always test your campaign with a small group before launching to your entire contact list.
+  </Card>
+  
+  <Card title="Monitor Quotas" icon="gauge">
+    Keep an eye on your hourly calling quotas to avoid service interruptions.
+  </Card>
+  
+  <Card title="Optimize Timing" icon="calendar">
+    Schedule campaigns during optimal calling hours for your target audience.
+  </Card>
+  
+  <Card title="Track Results" icon="chart-mixed">
+    Regularly export and analyze campaign results to improve future performance.
+  </Card>
+</CardGroup>
+
+## Data Structure
+
+Campaigns are stored with the following schema:
+
+```sql
+-- From migrations/2022_06_17_214735_create_campaigns_table.php
+CREATE TABLE campaigns (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    user_id BIGINT UNSIGNED,
+    name TEXT,
+    description TEXT,
+    group_id BIGINT UNSIGNED,      -- Contact group to target
+    provider BIGINT UNSIGNED,       -- Twilio provider ID
+    say TEXT,                       -- Text-to-speech content
+    audio TEXT,                     -- Audio file URL
+    xml TEXT,                       -- Custom TwiML path
+    expectation TEXT,               -- Expected response/outcome
+    status BOOLEAN,                 -- Active/Inactive
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+## Related Features
+
+<CardGroup cols={3}>
+  <Card title="Contact Management" icon="address-book" href="/features/contacts">
+    Manage contacts and groups for campaigns
+  </Card>
+  
+  <Card title="Web Dialer" icon="phone" href="/features/dialer">
+    Make individual calls with the web-based dialer
+  </Card>
+  
+  <Card title="Analytics" icon="chart-line" href="/features/analytics">
+    Analyze campaign performance and ROI
+  </Card>
+</CardGroup>

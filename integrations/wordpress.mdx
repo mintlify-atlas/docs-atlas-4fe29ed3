@@ -1,0 +1,347 @@
+---
+title: "WordPress Integration"
+description: "Connect TelemanAI with WordPress for automated campaigns"
+icon: "wordpress"
+---
+
+## Overview
+
+The WordPress integration enables you to:
+
+- Import WordPress users as contacts
+- Trigger campaigns from WordPress events
+- Sync user data between WordPress and TelemanAI
+- Authenticate API requests with token-based security
+
+## Prerequisites
+
+- WordPress site with admin access
+- TelemanAI plugin installed on WordPress
+- PHP 7.4 or higher on your WordPress server
+
+## Installation
+
+<Steps>
+  <Step title="Install TelemanAI WordPress Plugin">
+    1. Download the TelemanAI WordPress plugin
+    2. Upload to `/wp-content/plugins/teleman-wordpress/`
+    3. Activate the plugin from **Plugins** menu in WordPress admin
+  </Step>
+
+  <Step title="Configure WordPress in TelemanAI">
+    1. Log in to TelemanAI dashboard
+    2. Navigate to **Integrations** → **WordPress**
+    3. Enter your WordPress configuration:
+
+    - **WordPress URL**: Your WordPress site URL (e.g., `https://example.com`)
+    - **Admin Email**: Your WordPress admin email address
+
+    4. Click **Save Configuration**
+  </Step>
+
+  <Step title="Generate API Token">
+    In TelemanAI:
+
+    1. Click **Generate Token** button
+    2. Copy the generated token
+    3. This token will be used to authenticate API requests
+
+    <Warning>
+      Keep your API token secure. Anyone with this token can access your TelemanAI account.
+    </Warning>
+  </Step>
+
+  <Step title="Configure Plugin in WordPress">
+    In WordPress admin:
+
+    1. Go to **Settings** → **TelemanAI**
+    2. Paste the API token from previous step
+    3. Enter your TelemanAI application URL
+    4. Click **Save Settings**
+  </Step>
+</Steps>
+
+## Importing WordPress Users
+
+<Steps>
+  <Step title="Fetch WordPress Users">
+    In TelemanAI:
+
+    1. Go to **Integrations** → **WordPress**
+    2. Click **Fetch Data**
+    3. TelemanAI will retrieve all WordPress users via API
+  </Step>
+
+  <Step title="Review Imported Data">
+    TelemanAI displays a preview of fetched contacts:
+
+    - User name
+    - Phone number (if available)
+    - Email address
+    - User role
+  </Step>
+
+  <Step title="Import to Contacts">
+    1. Review the preview list
+    2. Click **Store Contacts**
+    3. Duplicate phone numbers are automatically skipped
+    4. You'll see a summary: "X new contacts stored"
+  </Step>
+</Steps>
+
+## API Integration Details
+
+### Authentication Flow
+
+The integration uses token-based authentication:
+
+```php
+// Token Generation (TelemanAI side)
+$token = generate_token();
+$wordpress->user_token = $token;
+$wordpress->save();
+```
+
+### Fetching Contacts
+
+The API endpoint for fetching WordPress contacts:
+
+```php
+// API Endpoint
+GET {WORDPRESS_URL}/wp-content/plugins/teleman-wordpress/teleman/phonebook.php?token={TOKEN}
+```
+
+Expected Response:
+```json
+[
+  {
+    "name": "John Doe",
+    "phone": "+1234567890"
+  },
+  {
+    "name": "Jane Smith",
+    "phone": "+0987654321"
+  }
+]
+```
+
+## WordPress Plugin Setup
+
+The TelemanAI WordPress plugin should expose a contacts endpoint:
+
+### Plugin File Structure
+
+```
+wp-content/plugins/teleman-wordpress/
+├── teleman-wordpress.php      # Main plugin file
+├── teleman/
+│   └── phonebook.php           # API endpoint
+└── readme.txt
+```
+
+### Example Plugin Implementation
+
+**teleman/phonebook.php:**
+
+```php
+<?php
+// Verify token
+if (!isset($_GET['token']) || !verify_teleman_token($_GET['token'])) {
+    http_response_code(401);
+    exit('Unauthorized');
+}
+
+// Get all WordPress users
+$users = get_users();
+$contacts = [];
+
+foreach ($users as $user) {
+    $phone = get_user_meta($user->ID, 'phone', true);
+    
+    if (!empty($phone)) {
+        $contacts[] = [
+            'name' => $user->display_name,
+            'phone' => $phone
+        ];
+    }
+}
+
+header('Content-Type: application/json');
+echo json_encode($contacts);
+```
+
+## Triggering Campaigns from WordPress
+
+You can trigger TelemanAI campaigns from WordPress events:
+
+### Example: New User Registration Campaign
+
+```php
+add_action('user_register', function($user_id) {
+    $user = get_user_by('id', $user_id);
+    $phone = get_user_meta($user_id, 'phone', true);
+    
+    if (!empty($phone)) {
+        // Call TelemanAI API to trigger campaign
+        $response = wp_remote_post('https://your-teleman.com/api/campaign/trigger', [
+            'body' => [
+                'token' => get_option('teleman_api_token'),
+                'campaign_id' => 123,
+                'contact' => [
+                    'name' => $user->display_name,
+                    'phone' => $phone
+                ]
+            ]
+        ]);
+    }
+});
+```
+
+## Routes and Controller Reference
+
+Key routes for WordPress integration (see `routes/woocommerce.php`):
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/dashboard/wp` | GET | WordPress integration page |
+| `/dashboard/wp/store` | POST | Save WordPress configuration |
+| `/dashboard/wp/token` | POST | Generate API token |
+| `/dashboard/wp/fetch_data` | GET | Fetch WordPress users |
+| `/dashboard/wp/store_data` | GET | Import users to contacts |
+
+Controller implementation: `WordPressController.php` (lines 1-228)
+
+## Configuration Storage
+
+WordPress configuration is stored in the `third_party` table:
+
+```sql
+SELECT * FROM third_party 
+WHERE application_name = 'wordpress' 
+AND user_id = {current_user_id};
+```
+
+Fields:
+- `application_name`: 'wordpress'
+- `application_url`: WordPress site URL
+- `user_email`: Admin email
+- `user_token`: API authentication token
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Token Generation Failed">
+    **Problem:** "The connection is failed" when generating token
+
+    **Solution:**
+    - Verify WordPress URL is accessible from TelemanAI server
+    - Check that the plugin is installed and activated
+    - Ensure the plugin endpoint is publicly accessible
+    - Test the URL manually in a browser
+  </Accordion>
+
+  <Accordion title="No Contacts Fetched">
+    **Problem:** Fetch returns empty or fails
+
+    **Solution:**
+    - Verify users have phone numbers in WordPress
+    - Check the API endpoint returns valid JSON
+    - Ensure the token is correctly passed in the URL
+    - Review WordPress error logs for PHP errors
+  </Accordion>
+
+  <Accordion title="Import Fails">
+    **Problem:** Contacts won't import to database
+
+    **Solution:**
+    - Ensure phone numbers are in valid format
+    - Check that you've fetched data first (session 'woocommerce' exists)
+    - Verify database permissions
+    - Review TelemanAI logs for specific errors
+  </Accordion>
+
+  <Accordion title="401 Unauthorized Error">
+    **Problem:** API requests return 401
+
+    **Solution:**
+    - Regenerate the API token in TelemanAI
+    - Update the token in WordPress plugin settings
+    - Ensure the token hasn't expired
+    - Check that the token is correctly URL-encoded
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Warning>
+  **Security Recommendations:**
+  - Always use HTTPS for both WordPress and TelemanAI
+  - Never expose API tokens in client-side code
+  - Implement token rotation/expiration
+  - Use WordPress nonces for form submissions
+  - Validate and sanitize all API inputs
+  - Limit API access by IP if possible
+</Warning>
+
+## Advanced Configuration
+
+### Custom User Meta Fields
+
+To include additional WordPress user meta:
+
+```php
+// In WordPress plugin
+$contacts[] = [
+    'name' => $user->display_name,
+    'phone' => get_user_meta($user->ID, 'phone', true),
+    'company' => get_user_meta($user->ID, 'company', true),
+    'notes' => get_user_meta($user->ID, 'notes', true)
+];
+```
+
+### Webhook Integration
+
+Set up webhooks to receive events from TelemanAI:
+
+```php
+// In WordPress functions.php
+add_action('rest_api_init', function() {
+    register_rest_route('teleman/v1', '/webhook', [
+        'methods' => 'POST',
+        'callback' => 'handle_teleman_webhook',
+        'permission_callback' => 'verify_teleman_token'
+    ]);
+});
+
+function handle_teleman_webhook($request) {
+    $data = $request->get_json_params();
+    
+    // Process campaign results
+    if ($data['event'] === 'call_completed') {
+        update_user_meta(
+            $data['user_id'], 
+            'last_call_status', 
+            $data['status']
+        );
+    }
+    
+    return new WP_REST_Response(['success' => true], 200);
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="WooCommerce Integration" icon="shopping-cart" href="/integrations/woocommerce">
+    Connect with WooCommerce for order-based campaigns
+  </Card>
+  <Card title="Campaign Automation" icon="robot" href="/api/campaigns/overview">
+    Automate campaigns based on WordPress events
+  </Card>
+  <Card title="Contact Management" icon="users" href="/guides/managing-contacts">
+    Manage your WordPress contacts
+  </Card>
+  <Card title="API Reference" icon="code" href="/integrations/wordpress">
+    Complete API documentation
+  </Card>
+</CardGroup>

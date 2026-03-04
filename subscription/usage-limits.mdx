@@ -1,0 +1,671 @@
+---
+title: 'Usage Limits & Tracking'
+description: 'Understand how TelemanAI tracks and manages usage limits for calls, emails, SMS, and credits'
+icon: 'gauge'
+---
+
+## Overview
+
+TelemanAI implements comprehensive usage tracking to monitor your consumption of credits, emails, SMS messages, and calling minutes. Each subscription package includes specific limits, and the platform tracks your usage in real-time to ensure you stay within your allocated resources.
+
+<Note>
+Usage limits help you manage costs and ensure fair resource allocation across all users.
+</Note>
+
+## Types of Usage Limits
+
+TelemanAI tracks three primary types of usage:
+
+<CardGroup cols={3}>
+  <Card title="Call Credits" icon="phone">
+    Credits consumed when making AI-powered voice calls through the platform
+  </Card>
+  
+  <Card title="Email Limits" icon="envelope">
+    Number of emails that can be sent for campaigns and notifications
+  </Card>
+  
+  <Card title="SMS Limits" icon="message">
+    Number of SMS messages available for text-based campaigns
+  </Card>
+</CardGroup>
+
+## Call Credits
+
+Call credits are the primary resource consumed in TelemanAI. They are used to make outbound AI voice calls to your customers.
+
+### How Call Credits Work
+
+<Steps>
+  <Step title="Credit Allocation">
+    When you subscribe to a package, you receive a specific amount of call credits. For example:
+    - Starter Package: 100 credits
+    - Professional Package: 500 credits
+    - Enterprise Package: 2000 credits
+  </Step>
+  
+  <Step title="Credit Consumption">
+    Credits are consumed based on:
+    - **Call duration**: Longer calls use more credits
+    - **Destination country**: Different countries have different per-minute rates
+    - **Call type**: Inbound vs outbound may have different rates
+  </Step>
+  
+  <Step title="Real-time Deduction">
+    Credits are deducted from your balance immediately after each call completes. You can monitor your remaining credits in real-time.
+  </Step>
+  
+  <Step title="Credit Exhaustion">
+    When credits run out:
+    - You cannot initiate new calls
+    - Active campaigns are paused
+    - You must purchase a new package or top up to continue
+  </Step>
+</Steps>
+
+### Credit Calculation
+
+The formula for calculating credit consumption varies based on call costs:
+
+```
+Credits Used = (Call Duration in Minutes) × (Country Rate per Minute)
+```
+
+<Accordion title="Example Credit Calculation">
+  **Scenario**: 10-minute call to USA
+  
+  Assumptions:
+  - USA rate: 0.5 credits per minute
+  - Call duration: 10 minutes
+  
+  Calculation:
+  ```
+  Credits Used = 10 minutes × 0.5 credits/minute = 5 credits
+  ```
+  
+  If your package has 100 credits:
+  ```
+  Remaining Credits = 100 - 5 = 95 credits
+  ```
+</Accordion>
+
+### Viewing Credit Balance
+
+To check your current credit balance:
+
+1. Navigate to **Dashboard** or **My Profile**
+2. View the **Credits** widget showing:
+   - Total credits from package
+   - Credits consumed
+   - Remaining credits
+   - Percentage used
+
+<Info>
+Your credit balance is updated in real-time after each call. No manual refresh needed.
+</Info>
+
+### Credit Types
+
+TelemanAI tracks two types of credit metrics:
+
+<ParamField path="credit" type="number">
+  **Current Credits**: The remaining credits available for use in your active subscription. This decreases as you make calls.
+</ParamField>
+
+<ParamField path="all_time_credit" type="number">
+  **All-Time Credits**: The total credits consumed across all your subscriptions since account creation. This only increases and is used for analytics.
+</ParamField>
+
+## Email Limits
+
+Email limits control how many emails you can send through the TelemanAI platform for campaigns, notifications, and follow-ups.
+
+### Email Limit Structure
+
+Each package defines an email limit:
+
+<Accordion title="Email Limit in Packages">
+  ```php
+  'emails' => null  // Null typically means unlimited
+  'emails' => 1000  // 1000 emails per billing period
+  'emails' => 5000  // 5000 emails per billing period
+  ```
+  
+  <Note>
+  Many packages set emails to `null`, which indicates unlimited or very high limits. Check your specific package for details.
+  </Note>
+</Accordion>
+
+### How Email Tracking Works
+
+<Steps>
+  <Step title="Email Allocation">
+    Your package includes a specific number of emails (or unlimited)
+  </Step>
+  
+  <Step title="Email Sending">
+    Each time you send an email through:
+    - Marketing campaigns
+    - Automated follow-ups
+    - Bulk email broadcasts
+    - Customer notifications
+    
+    The system decrements your email counter
+  </Step>
+  
+  <Step title="Limit Checking">
+    Before sending, TelemanAI verifies:
+    - You have remaining email quota
+    - Your subscription is active
+    - Email service is configured
+  </Step>
+  
+  <Step title="Limit Reached">
+    When email limit is reached:
+    - New emails are blocked
+    - You receive a notification
+    - You must upgrade or wait for renewal
+  </Step>
+</Steps>
+
+### Email Usage Tracking
+
+View your email usage:
+
+1. Go to **Dashboard** > **Usage Statistics**
+2. View **Email Usage** section showing:
+   - Total email limit
+   - Emails sent this period
+   - Remaining emails
+   - Daily/weekly usage trends
+
+<Warning>
+Marketing emails sent to invalid or bounced addresses still count against your limit.
+</Warning>
+
+## SMS Limits
+
+SMS limits control the number of text messages you can send through the platform.
+
+### SMS Limit Structure
+
+Similar to email limits, SMS limits are defined per package:
+
+<Accordion title="SMS Limit in Packages">
+  ```php
+  'sms' => null   // Null typically means unlimited
+  'sms' => 500    // 500 SMS per billing period
+  'sms' => 2000   // 2000 SMS per billing period
+  ```
+</Accordion>
+
+### How SMS Tracking Works
+
+<Steps>
+  <Step title="SMS Allocation">
+    Package includes specific SMS quota or unlimited access
+  </Step>
+  
+  <Step title="SMS Sending">
+    SMS count decreases when sending:
+    - Marketing SMS campaigns
+    - OTP/verification codes
+    - Appointment reminders
+    - Customer notifications
+  </Step>
+  
+  <Step title="Multi-part Messages">
+    Long SMS messages are split into multiple parts:
+    - Standard SMS: 160 characters = 1 SMS
+    - Longer message: 161-320 characters = 2 SMS
+    - Unicode (emoji): 70 characters per SMS
+  </Step>
+  
+  <Step title="Limit Management">
+    When SMS limit is reached:
+    - SMS sending is blocked
+    - Campaigns using SMS are paused
+    - Upgrade package to continue
+  </Step>
+</Steps>
+
+### SMS Provider Configuration
+
+SMS sending requires configured providers:
+
+<CardGroup cols={2}>
+  <Card title="Telesign" icon="signature">
+    ```bash .env
+    TELESIGN_ACTIVE="YES"
+    TELESIGN_CUSTOMER_ID="your_customer_id"
+    TELESIGN_API_KEY="your_api_key"
+    ```
+  </Card>
+  
+  <Card title="MessageBird" icon="bird">
+    ```bash .env
+    MESSAGEBIRD_ACTIVE="YES"
+    MESSAGEBIRD_ACCESS_KEY="your_access_key"
+    ```
+  </Card>
+</CardGroup>
+
+## Usage Tracking Database
+
+TelemanAI maintains detailed usage records in the `item_limit_counts` table:
+
+<ParamField path="user_id" type="integer">
+  The ID of the user account
+</ParamField>
+
+<ParamField path="subscription_id" type="integer">
+  The active subscription ID being tracked
+</ParamField>
+
+<ParamField path="domain" type="string">
+  The domain associated with the user (for multi-tenant setups)
+</ParamField>
+
+<ParamField path="credit" type="number">
+  Current remaining call credits
+</ParamField>
+
+<ParamField path="all_time_credit" type="number">
+  Total credits consumed since account creation
+</ParamField>
+
+<ParamField path="emails" type="number">
+  Remaining email quota or count of emails sent
+</ParamField>
+
+<ParamField path="sms" type="number">
+  Remaining SMS quota or count of SMS sent
+</ParamField>
+
+### Tracking Updates
+
+Usage tracking is updated automatically:
+
+- **Call completion**: Credits deducted immediately after call ends
+- **Email sent**: Counter updated after successful email delivery
+- **SMS sent**: Counter updated after SMS gateway confirms sending
+- **Package renewal**: Limits reset to new package values
+- **Package upgrade**: Limits updated to new package allocation
+
+## Monitoring Usage
+
+### Real-time Usage Dashboard
+
+Access your usage statistics:
+
+<Steps>
+  <Step title="Navigate to Dashboard">
+    Log in and go to your main **Dashboard**
+  </Step>
+  
+  <Step title="View Usage Widgets">
+    The dashboard displays real-time usage for:
+    - Call credits (remaining/total)
+    - Emails sent/remaining
+    - SMS sent/remaining
+    - Active calls
+    - Campaign status
+  </Step>
+  
+  <Step title="Detailed Analytics">
+    Click on usage widgets to view:
+    - Usage trends over time
+    - Peak usage periods
+    - Cost breakdown by country
+    - Projected usage based on trends
+  </Step>
+</Steps>
+
+### Usage Alerts
+
+TelemanAI sends notifications when usage reaches certain thresholds:
+
+<Accordion title="Credit Alerts">
+  Receive alerts when credits reach:
+  - **75% used**: Warning to monitor usage
+  - **90% used**: Consider upgrading or purchasing more
+  - **100% used**: Credits exhausted, purchase required
+</Accordion>
+
+<Accordion title="Email/SMS Alerts">
+  Receive notifications when:
+  - 80% of email/SMS quota used
+  - 95% of email/SMS quota used
+  - Quota fully exhausted
+</Accordion>
+
+<Info>
+Alerts are sent via email and in-app notifications. Configure alert preferences in **Settings** > **Notifications**.
+</Info>
+
+## Limit Overages
+
+What happens when you exceed your usage limits?
+
+### Credit Overage
+
+<Warning>
+When call credits are exhausted:
+</Warning>
+
+1. **No new calls**: Cannot initiate new outbound calls
+2. **Campaign pause**: Active campaigns automatically pause
+3. **Grace period**: No grace period - immediate effect
+4. **Data retention**: All call history and data remain accessible
+5. **Resolution**: Purchase new package or top-up to continue
+
+### Email/SMS Overage
+
+<Warning>
+When email or SMS limits are reached:
+</Warning>
+
+1. **Sending blocked**: New emails/SMS cannot be sent
+2. **Queued messages**: Messages are held in queue (not lost)
+3. **Campaign impact**: Active campaigns pause automatically
+4. **Grace period**: Typically none, but check admin settings
+5. **Resolution**: Upgrade package to resume sending
+
+### No Overage Charges
+
+<Info>
+TelemanAI does not automatically charge for overages. You must explicitly purchase additional resources.
+</Info>
+
+This protects you from unexpected charges. The downside is services stop when limits are reached.
+
+## Upgrading for More Resources
+
+When you need more capacity:
+
+### Option 1: Upgrade Package
+
+<Steps>
+  <Step title="Compare Packages">
+    Navigate to **Packages** or **Pricing** page
+  </Step>
+  
+  <Step title="Select Higher Tier">
+    Choose a package with:
+    - More credits
+    - Higher email/SMS limits
+    - Longer validity period
+    - Additional features
+  </Step>
+  
+  <Step title="Complete Payment">
+    Pay for the new package using your preferred payment gateway
+  </Step>
+  
+  <Step title="Immediate Activation">
+    New limits apply immediately:
+    - Credits added to balance
+    - Email/SMS quotas reset
+    - Paused campaigns can resume
+  </Step>
+</Steps>
+
+### Option 2: Top-Up Credits
+
+Some installations support credit top-ups:
+
+<Accordion title="Credit Top-Up Process">
+  If enabled by your administrator:
+  
+  1. Go to **My Subscription** or **Billing**
+  2. Click **Top Up Credits** or **Add Funds**
+  3. Enter desired amount
+  4. Select payment gateway
+  5. Complete payment
+  6. Credits added immediately to current balance
+  
+  <Note>
+  Top-ups don't extend your subscription validity period - only add credits.
+  </Note>
+</Accordion>
+
+### Option 3: Wait for Renewal
+
+If your package is about to renew:
+
+- Limits reset to package defaults on renewal date
+- Can continue using platform with fresh allocation
+- Consider if upgrade is needed before renewal
+
+## Usage Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Monitor Regularly" icon="chart-line">
+    Check usage dashboard weekly to track consumption trends and avoid surprises
+  </Card>
+  
+  <Card title="Set Usage Budgets" icon="calculator">
+    Establish internal budgets for calls, emails, and SMS to control costs
+  </Card>
+  
+  <Card title="Optimize Campaigns" icon="bullseye">
+    Target your campaigns to reduce waste and improve ROI:
+    - Segment audiences
+    - Test small groups first
+    - Remove invalid contacts
+  </Card>
+  
+  <Card title="Plan for Growth" icon="arrow-trend-up">
+    Choose packages with headroom for growth to avoid frequent upgrades
+  </Card>
+  
+  <Card title="Use Analytics" icon="magnifying-glass-chart">
+    Analyze which campaigns perform best to allocate resources effectively
+  </Card>
+  
+  <Card title="Schedule Smartly" icon="clock">
+    Time campaigns when conversion rates are highest to maximize limited resources
+  </Card>
+</CardGroup>
+
+## Understanding Country Call Costs
+
+Call credit consumption varies significantly by destination country:
+
+### High-Cost Countries
+
+Some countries have higher per-minute rates:
+
+- Remote islands and territories
+- Countries with limited telecom infrastructure
+- Premium number ranges
+
+Calls to these destinations consume credits faster.
+
+### Low-Cost Countries
+
+Major markets typically have lower rates:
+
+- USA and Canada
+- European Union countries
+- Major Asian markets (India, China)
+- Australia and New Zealand
+
+Calls to these destinations are more credit-efficient.
+
+### Checking Country Rates
+
+To view rates for specific countries:
+
+1. Go to **Packages** page
+2. Click on a package to view details
+3. Scroll to **Supported Countries** section
+4. View per-minute rates for each country
+5. Calculate estimated credit needs based on target audience
+
+<Info>
+Country rates are based on Twilio call costs and are configured by your administrator.
+</Info>
+
+## Usage Reporting
+
+### Generate Usage Reports
+
+TelemanAI provides detailed usage reports:
+
+<Steps>
+  <Step title="Access Reports">
+    Navigate to **Reports** or **Analytics** section
+  </Step>
+  
+  <Step title="Select Report Type">
+    Choose from:
+    - Call usage report
+    - Email campaign report
+    - SMS usage report
+    - Cost analysis report
+    - Comprehensive usage report
+  </Step>
+  
+  <Step title="Set Date Range">
+    Select time period for report:
+    - Last 7 days
+    - Last 30 days
+    - Current billing period
+    - Custom date range
+  </Step>
+  
+  <Step title="Export Report">
+    Download report in various formats:
+    - PDF for sharing
+    - CSV for analysis
+    - Excel for budgeting
+  </Step>
+</Steps>
+
+### Report Contents
+
+Usage reports typically include:
+
+- **Summary Statistics**: Total usage, costs, and trends
+- **Breakdown by Type**: Calls, emails, SMS separately
+- **Geographic Analysis**: Usage by country/region
+- **Time Analysis**: Usage patterns by hour/day/week
+- **Campaign Performance**: Usage per campaign
+- **Cost Projection**: Estimated costs for next period
+
+## Common Usage Questions
+
+<AccordionGroup>
+  <Accordion title="Do credits expire?">
+    Yes, credits expire when your subscription package expires. Credits are valid only for the duration specified in your package (e.g., 30 days, 90 days, 1 year).
+    
+    **Important**: Unused credits typically do not roll over to the next billing period unless specifically configured by your administrator.
+  </Accordion>
+  
+  <Accordion title="Can I share credits with team members?">
+    Credits are typically shared across your organization account. All team members under the same account draw from the same credit pool. Some installations support sub-accounts with separate credit allocations.
+  </Accordion>
+  
+  <Accordion title="How are failed calls charged?">
+    Failed calls are typically not charged or charged minimally:
+    - Call not answered: Usually no charge
+    - Call answered but dropped immediately: Minimal charge
+    - Call completed: Full charge based on duration
+    
+    Check your call logs for exact credit deductions.
+  </Accordion>
+  
+  <Accordion title="Are incoming calls charged?">
+    Incoming calls may or may not consume credits depending on your package configuration. Check your specific package details or contact support for clarification.
+  </Accordion>
+  
+  <Accordion title="Can I get a refund for unused credits?">
+    Typically, no. Credits are sold as part of packages and are non-refundable. Choose packages carefully based on your actual usage needs.
+  </Accordion>
+  
+  <Accordion title="What happens to my data when limits are reached?">
+    All your data remains intact:
+    - Call history preserved
+    - Contact lists maintained
+    - Campaign data saved
+    - Analytics available
+    
+    Only new resource-consuming activities are blocked until you upgrade.
+  </Accordion>
+  
+  <Accordion title="How accurate is the usage tracking?">
+    Usage tracking is real-time and highly accurate:
+    - Credits updated within seconds of call completion
+    - Email/SMS counts updated immediately after sending
+    - Database transactions ensure consistency
+    - Can be audited against call logs and gateway records
+  </Accordion>
+</AccordionGroup>
+
+## API Access to Usage Data
+
+Developers can access usage data programmatically:
+
+### Usage Endpoints
+
+```bash
+GET /api/v1/usage/credits
+GET /api/v1/usage/emails
+GET /api/v1/usage/sms
+GET /api/v1/usage/summary
+```
+
+### Example Response
+
+```json
+{
+  "user_id": 123,
+  "subscription_id": 456,
+  "credit": {
+    "remaining": 750,
+    "total": 1000,
+    "used": 250,
+    "percentage_used": 25
+  },
+  "emails": {
+    "remaining": 4500,
+    "total": 5000,
+    "sent": 500
+  },
+  "sms": {
+    "remaining": 1800,
+    "total": 2000,
+    "sent": 200
+  },
+  "validity": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-03-01",
+    "days_remaining": 25
+  }
+}
+```
+
+<Info>
+API access requires authentication. See the [API Authentication](/api/authentication) for details.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Subscription Packages" icon="box" href="/subscription/packages">
+    Review available packages and their included limits
+  </Card>
+  
+  <Card title="Payment Gateways" icon="credit-card" href="/subscription/payment-gateways">
+    Configure payment methods for purchasing packages
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api/campaigns/overview">
+    Access usage data programmatically via APIs
+  </Card>
+  
+  <Card title="Analytics" icon="chart-bar" href="/features/analytics">
+    Learn how to analyze your usage and optimize campaigns
+  </Card>
+</CardGroup>

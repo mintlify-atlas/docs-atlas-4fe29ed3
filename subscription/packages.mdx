@@ -1,0 +1,329 @@
+---
+title: 'Subscription Packages'
+description: 'Learn about TelemanAI subscription packages, pricing tiers, features, and how to choose the right plan'
+icon: 'box'
+---
+
+## Overview
+
+TelemanAI offers flexible subscription packages designed to meet the needs of businesses of all sizes. Each package includes a specific allocation of credits, features, and supported countries for making AI-powered telemarketing calls.
+
+<Note>
+All new users can start with a **trial package** to test the platform before committing to a paid subscription.
+</Note>
+
+## How Packages Work
+
+When you subscribe to a package in TelemanAI, you receive:
+
+- **Credits**: Used for making AI voice calls through the platform
+- **Email Limits**: Number of emails you can send (currently unlimited in most plans)
+- **SMS Limits**: Number of SMS messages you can send (currently unlimited in most plans)
+- **Features**: Access to specific platform features like call recording, analytics, CRM integration, etc.
+- **Supported Countries**: List of countries where you can make outbound calls
+- **Validity Period**: Duration for which the package remains active (e.g., 30 days, 90 days, 365 days)
+
+## Package Structure
+
+Each subscription package includes the following components:
+
+<ParamField path="name" type="string" required>
+  The display name of the package (e.g., "Starter Plan", "Professional Plan", "Enterprise Plan")
+</ParamField>
+
+<ParamField path="price" type="number" required>
+  The cost of the package in USD or your configured currency
+</ParamField>
+
+<ParamField path="credit" type="number" required>
+  The amount of calling credits included in the package. Credits are consumed based on call duration and destination country rates.
+</ParamField>
+
+<ParamField path="range" type="number" required>
+  The validity period for the package (e.g., 30, 90, 365)
+</ParamField>
+
+<ParamField path="range_type" type="string" required>
+  The unit of time for the validity period. Options:
+  - `days` - Package valid for specified number of days
+  - `months` - Package valid for specified number of months
+  - `years` - Package valid for specified number of years
+</ParamField>
+
+<ParamField path="feature_id" type="array" required>
+  List of feature IDs included in the package. Features control what functionality is available to subscribers.
+</ParamField>
+
+<ParamField path="active" type="boolean" default="true">
+  Whether the package is currently available for purchase
+</ParamField>
+
+<ParamField path="trial" type="boolean" default="false">
+  Whether this is a trial package (free trial with limited duration)
+</ParamField>
+
+## Trial Periods
+
+TelemanAI offers trial packages to help you evaluate the platform before purchasing a paid subscription.
+
+<Card title="Trial Package Benefits" icon="gift">
+  - Free access to the platform for a limited time (default: 7 days)
+  - Limited credits to test AI calling features
+  - Access to core features
+  - No credit card required during trial
+</Card>
+
+### How Trial Works
+
+1. **Sign Up**: Create a new account on TelemanAI
+2. **Automatic Enrollment**: Trial package is automatically activated
+3. **Explore Features**: Use allocated credits to test calling, SMS, and email features
+4. **Upgrade Anytime**: Convert to a paid package at any time during or after trial
+
+<Note>
+Trial period duration is configured by your administrator. Default is **7 days** as set in the `.env` configuration:
+```bash
+TRIAL_PERIOD_DAYS="7"
+```
+</Note>
+
+## Pricing Tiers
+
+Packages are typically structured in tiers to accommodate different business needs:
+
+<Accordion title="Starter Tier">
+  **Best for**: Small businesses and startups
+  
+  - Limited calling credits
+  - Basic features included
+  - Fewer supported countries
+  - Monthly validity
+  - Lower price point
+  
+  **Typical Use Case**: Testing the platform, small campaigns, low-volume calling
+</Accordion>
+
+<Accordion title="Professional Tier">
+  **Best for**: Growing businesses with regular calling needs
+  
+  - Moderate calling credits
+  - Advanced features included
+  - More supported countries
+  - Quarterly or monthly validity
+  - Mid-range pricing
+  
+  **Typical Use Case**: Regular telemarketing campaigns, sales teams, customer outreach
+</Accordion>
+
+<Accordion title="Enterprise Tier">
+  **Best for**: Large organizations with high-volume calling
+  
+  - High calling credits
+  - All features included
+  - All supported countries
+  - Annual validity
+  - Premium pricing with volume discounts
+  
+  **Typical Use Case**: Large-scale campaigns, call centers, multi-team operations
+</Accordion>
+
+## Package Selection
+
+### Choosing the Right Package
+
+Consider these factors when selecting a subscription package:
+
+<Steps>
+  <Step title="Estimate Call Volume">
+    Calculate how many minutes of calling you need per month. Check the call rates for your target countries to estimate credit requirements.
+  </Step>
+  
+  <Step title="Required Features">
+    Review the features included in each package. Ensure the package includes critical features like:
+    - Call recording
+    - Real-time analytics
+    - CRM integration
+    - Multi-language support
+    - API access
+  </Step>
+  
+  <Step title="Target Countries">
+    Verify that your target calling countries are included in the package's supported country list.
+  </Step>
+  
+  <Step title="Budget">
+    Compare package prices against your budget. Consider longer validity periods (annual) for better value.
+  </Step>
+  
+  <Step title="Growth Plans">
+    Choose a package that can accommodate your growth. You can always upgrade, but starting with adequate resources prevents interruptions.
+  </Step>
+</Steps>
+
+### Subscribing to a Package
+
+To subscribe to a package:
+
+1. Navigate to **Packages** or **Pricing** section in your dashboard
+2. Review available packages and their features
+3. Click **Subscribe** or **Select Plan** on your chosen package
+4. Choose your payment gateway (Stripe, PayPal, Razorpay, etc.)
+5. Complete the payment process
+6. Your subscription activates immediately upon successful payment
+
+<Warning>
+Ensure your account has valid payment information before subscribing to avoid payment failures.
+</Warning>
+
+## Package Features
+
+Packages can include various features that enhance your telemarketing capabilities:
+
+<CardGroup cols={2}>
+  <Card title="Call Recording" icon="microphone">
+    Record all inbound and outbound calls for quality assurance and training
+  </Card>
+  
+  <Card title="Real-time Analytics" icon="chart-line">
+    Monitor call performance, conversion rates, and agent productivity in real-time
+  </Card>
+  
+  <Card title="CRM Integration" icon="plug">
+    Connect with popular CRM systems to sync customer data and call logs
+  </Card>
+  
+  <Card title="Multi-language Support" icon="language">
+    Make calls in multiple languages with AI voice assistants
+  </Card>
+  
+  <Card title="API Access" icon="code">
+    Integrate TelemanAI with your existing systems via REST APIs
+  </Card>
+  
+  <Card title="Custom Scripts" icon="file-lines">
+    Create and customize conversation scripts for your AI calling campaigns
+  </Card>
+</CardGroup>
+
+## Package Validity
+
+Your package remains active for the duration specified in its validity period:
+
+- **Start Date**: The date your payment is processed
+- **End Date**: Calculated based on the validity period (e.g., start_date + 30 days)
+- **Auto-renewal**: Not enabled by default - you must manually renew before expiration
+- **Grace Period**: Some packages may include a grace period after expiration
+
+<Info>
+You'll receive email notifications before your package expires:
+- 7 days before expiration
+- 3 days before expiration (configurable via `EXPRITY_ALERT_MAIL_DAY`)
+- On expiration day
+</Info>
+
+## Supported Countries
+
+Each package includes specific countries where you can make outbound calls. The supported countries are determined by:
+
+- Twilio call cost rates for each country
+- Package tier (higher tiers typically include more countries)
+- Availability of phone numbers in target countries
+
+### Viewing Supported Countries
+
+To see which countries are included in a package:
+
+1. Go to the **Packages** page
+2. Click on a package to view details
+3. Scroll to the **Supported Countries** section
+4. Review the list of available countries with their call rates
+
+## Managing Your Subscription
+
+### Viewing Current Subscription
+
+To view your active subscription:
+
+1. Navigate to **My Profile** > **My Subscriptions**
+2. View details including:
+   - Package name
+   - Remaining credits
+   - Start and end dates
+   - Payment status
+   - Payment gateway used
+
+### Upgrading Your Package
+
+<Steps>
+  <Step title="Navigate to Packages">
+    Go to the **Packages** or **Pricing** page
+  </Step>
+  
+  <Step title="Select Higher Tier">
+    Choose a package with more credits or features than your current plan
+  </Step>
+  
+  <Step title="Complete Payment">
+    Pay the difference or full amount (depending on admin settings)
+  </Step>
+  
+  <Step title="Immediate Activation">
+    Your new package activates immediately with updated credits and features
+  </Step>
+</Steps>
+
+<Warning>
+Upgrading to a new package may replace your current subscription. Any unused credits from your previous package may be forfeited depending on the platform configuration.
+</Warning>
+
+## Package History
+
+TelemanAI maintains a complete history of your package subscriptions:
+
+- All previous packages you've purchased
+- Payment dates and amounts
+- Transaction IDs from payment gateways
+- Start and end dates for each subscription
+- Payment status (pending, completed, failed, refunded)
+
+Access your subscription history from **My Profile** > **Payment History**.
+
+## Common Questions
+
+<AccordionGroup>
+  <Accordion title="Can I have multiple active packages?">
+    Typically, only one package can be active at a time per user account. Contact your administrator if you need multiple packages for different teams.
+  </Accordion>
+  
+  <Accordion title="What happens when my package expires?">
+    When your package expires:
+    - You lose access to package features
+    - Remaining credits become unusable
+    - You cannot make new calls until you renew or purchase a new package
+    - Your data and call history remain intact
+  </Accordion>
+  
+  <Accordion title="Can I cancel my subscription?">
+    Packages are typically non-refundable once purchased. You can choose not to renew when it expires. Contact support for specific cancellation policies.
+  </Accordion>
+  
+  <Accordion title="Do unused credits roll over?">
+    Credits typically do not roll over to the next billing period. Use your credits before they expire or upgrade to a longer validity period.
+  </Accordion>
+  
+  <Accordion title="Can I downgrade my package?">
+    Downgrades may not be available during an active subscription period. You can choose a lower-tier package when your current subscription expires.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Payment Gateways" icon="credit-card" href="/subscription/payment-gateways">
+    Learn about available payment methods and how to configure them
+  </Card>
+  
+  <Card title="Usage Limits" icon="gauge" href="/subscription/usage-limits">
+    Understand how credits, email, and SMS limits work
+  </Card>
+</CardGroup>

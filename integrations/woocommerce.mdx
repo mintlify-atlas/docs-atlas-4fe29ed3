@@ -1,0 +1,528 @@
+---
+title: "WooCommerce Integration"
+description: "Sync customers and trigger campaigns based on WooCommerce orders"
+icon: "shopping-cart"
+---
+
+## Overview
+
+The WooCommerce integration enables you to:
+
+- Import WooCommerce customers as contacts
+- Trigger campaigns based on order events
+- Sync customer data automatically
+- Send follow-up calls for order confirmations
+- Re-engage customers with abandoned carts
+
+## Prerequisites
+
+- WordPress site with WooCommerce installed
+- WooCommerce REST API enabled
+- TelemanAI plugin for WordPress
+- Admin access to both WooCommerce and TelemanAI
+
+## Setup Instructions
+
+<Steps>
+  <Step title="Install TelemanAI WordPress Plugin">
+    1. Download the TelemanAI WordPress plugin
+    2. Upload to `/wp-content/plugins/teleman-wordpress/`
+    3. Activate the plugin in WordPress admin
+    4. The plugin automatically detects WooCommerce
+  </Step>
+
+  <Step title="Configure WooCommerce in TelemanAI">
+    1. Log in to TelemanAI dashboard
+    2. Navigate to **Integrations** → **WooCommerce**
+    3. Enter your configuration:
+
+    ```
+    Store URL: https://your-store.com
+    Admin Email: admin@your-store.com
+    ```
+
+    4. Click **Save Configuration**
+  </Step>
+
+  <Step title="Generate API Token">
+    1. In TelemanAI, click **Generate Token**
+    2. Copy the generated API token
+    3. This token authenticates requests between WooCommerce and TelemanAI
+
+    <Warning>
+      Store the API token securely. Never share it publicly or commit to version control.
+    </Warning>
+  </Step>
+
+  <Step title="Configure Token in WordPress">
+    1. In WordPress admin, go to **WooCommerce** → **Settings** → **TelemanAI**
+    2. Paste the API token
+    3. Enter your TelemanAI application URL
+    4. Click **Save Changes**
+  </Step>
+</Steps>
+
+## Importing WooCommerce Customers
+
+<Steps>
+  <Step title="Fetch Customer Data">
+    In TelemanAI:
+
+    1. Go to **Integrations** → **WooCommerce**
+    2. Click **Fetch Customers**
+    3. TelemanAI retrieves all customers from WooCommerce
+  </Step>
+
+  <Step title="Review Customer Preview">
+    The system displays:
+
+    - Customer name
+    - Phone number (billing phone)
+    - Email address
+    - Total orders
+    - Customer since date
+  </Step>
+
+  <Step title="Import to Contacts">
+    1. Review the customer list
+    2. Click **Store Contacts**
+    3. Customers are imported with reference "woocommerce"
+    4. Duplicates are automatically skipped
+    5. Success message shows: "X new contacts stored"
+  </Step>
+</Steps>
+
+## Order-Based Campaign Triggers
+
+Automate campaigns based on WooCommerce order events:
+
+### Order Confirmation Calls
+
+Trigger a call when an order is placed:
+
+```php
+// In WordPress functions.php or plugin
+add_action('woocommerce_order_status_processing', function($order_id) {
+    $order = wc_get_order($order_id);
+    
+    // Get customer phone
+    $phone = $order->get_billing_phone();
+    $name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
+    
+    // Trigger TelemanAI campaign
+    trigger_teleman_campaign([
+        'campaign_id' => 101, // Order confirmation campaign
+        'contact' => [
+            'name' => $name,
+            'phone' => $phone,
+            'order_id' => $order_id,
+            'order_total' => $order->get_total()
+        ]
+    ]);
+});
+```
+
+### Abandoned Cart Recovery
+
+Re-engage customers with abandoned carts:
+
+```php
+add_action('woocommerce_cart_updated', function() {
+    if (!is_user_logged_in()) return;
+    
+    $cart = WC()->cart;
+    if ($cart->is_empty()) return;
+    
+    $user = wp_get_current_user();
+    $phone = get_user_meta($user->ID, 'billing_phone', true);
+    
+    // Schedule follow-up call after 1 hour
+    wp_schedule_single_event(time() + 3600, 'teleman_abandoned_cart', [
+        'user_id' => $user->ID,
+        'phone' => $phone,
+        'cart_total' => $cart->get_total('edit')
+    ]);
+});
+```
+
+### Order Delivery Notification
+
+Notify customers when order is shipped:
+
+```php
+add_action('woocommerce_order_status_completed', function($order_id) {
+    $order = wc_get_order($order_id);
+    
+    trigger_teleman_campaign([
+        'campaign_id' => 102, // Delivery notification
+        'contact' => [
+            'name' => $order->get_billing_first_name(),
+            'phone' => $order->get_billing_phone(),
+            'tracking_number' => $order->get_meta('_tracking_number')
+        ]
+    ]);
+});
+```
+
+## API Integration
+
+### Plugin Endpoint Structure
+
+The WordPress plugin exposes customer data:
+
+```
+GET {STORE_URL}/wp-content/plugins/teleman-wordpress/teleman/phonebook.php?token={TOKEN}
+```
+
+**Response Format:**
+
+```json
+[
+  {
+    "name": "John Doe",
+    "phone": "+1234567890",
+    "email": "john@example.com",
+    "total_orders": 5,
+    "total_spent": "$450.00"
+  },
+  {
+    "name": "Jane Smith",
+    "phone": "+0987654321",
+    "email": "jane@example.com",
+    "total_orders": 2,
+    "total_spent": "$125.00"
+  }
+]
+```
+
+### Customer Data Extraction
+
+**Plugin Implementation (phonebook.php):**
+
+```php
+<?php
+// Verify token
+if (!isset($_GET['token']) || !verify_teleman_token($_GET['token'])) {
+    http_response_code(401);
+    exit('Unauthorized');
+}
+
+// Check if WooCommerce is active
+if (!function_exists('wc_get_orders')) {
+    exit('WooCommerce not found');
+}
+
+// Get all customers
+$customer_query = new WP_User_Query([
+    'role' => 'customer',
+    'number' => -1
+]);
+
+$contacts = [];
+
+foreach ($customer_query->get_results() as $user) {
+    $customer = new WC_Customer($user->ID);
+    $phone = $customer->get_billing_phone();
+    
+    if (!empty($phone)) {
+        $contacts[] = [
+            'name' => $customer->get_first_name() . ' ' . $customer->get_last_name(),
+            'phone' => $phone,
+            'email' => $customer->get_email(),
+            'total_orders' => wc_get_customer_order_count($user->ID),
+            'total_spent' => wc_get_customer_total_spent($user->ID)
+        ];
+    }
+}
+
+header('Content-Type: application/json');
+echo json_encode($contacts);
+```
+
+## Customer Segmentation
+
+Create targeted campaigns based on customer segments:
+
+### High-Value Customers
+
+```php
+// Get customers who spent more than $500
+$high_value_customers = array_filter($contacts, function($contact) {
+    return floatval(str_replace(['$', ','], '', $contact['total_spent'])) > 500;
+});
+```
+
+### Repeat Customers
+
+```php
+// Get customers with 3+ orders
+$repeat_customers = array_filter($contacts, function($contact) {
+    return $contact['total_orders'] >= 3;
+});
+```
+
+### Inactive Customers
+
+```php
+// Get customers who haven't ordered in 90 days
+$inactive_customers = get_inactive_customers(90);
+
+function get_inactive_customers($days) {
+    $date = date('Y-m-d', strtotime("-{$days} days"));
+    
+    $orders = wc_get_orders([
+        'date_created' => '<' . $date,
+        'status' => ['completed', 'processing'],
+        'return' => 'ids'
+    ]);
+    
+    // Get unique customer IDs
+    $customer_ids = array_unique(array_map(function($order_id) {
+        return wc_get_order($order_id)->get_customer_id();
+    }, $orders));
+    
+    return $customer_ids;
+}
+```
+
+## Routes and Controller
+
+WooCommerce integration routes (see `routes/woocommerce.php`):
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/dashboard/wp` | GET | Integration dashboard |
+| `/dashboard/wp/store` | POST | Save configuration |
+| `/dashboard/wp/token` | POST | Generate API token |
+| `/dashboard/wp/fetch_data` | GET | Fetch WooCommerce customers |
+| `/dashboard/wp/store_data` | GET | Import customers to contacts |
+
+<Note>
+  The WooCommerce integration shares routes with WordPress integration. Controller: `WordPressController.php`
+</Note>
+
+## Database Schema
+
+Configuration is stored in the `third_party` table:
+
+```sql
+CREATE TABLE third_party (
+    id INT PRIMARY KEY,
+    user_id INT,
+    application_name VARCHAR(50), -- 'wordpress' for WooCommerce
+    application_url VARCHAR(255),
+    user_email VARCHAR(255),
+    user_token TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+Contacts imported from WooCommerce have:
+- `reference` field set to "woocommerce"
+- `name` from billing name
+- `phone` from billing phone
+- `country` can be populated from billing country
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No Customers Found">
+    **Problem:** Fetch returns empty result
+
+    **Solution:**
+    - Verify WooCommerce is installed and active
+    - Ensure customers have billing phone numbers
+    - Check that the plugin endpoint is accessible
+    - Test the API URL manually:
+      ```bash
+      curl "https://your-store.com/wp-content/plugins/teleman-wordpress/teleman/phonebook.php?token=YOUR_TOKEN"
+      ```
+  </Accordion>
+
+  <Accordion title="Connection Failed">
+    **Problem:** "The connection is failed" error
+
+    **Solution:**
+    - Verify WordPress URL is correct and accessible
+    - Check that the plugin is activated
+    - Ensure SSL certificate is valid if using HTTPS
+    - Check server firewall rules
+    - Review WordPress error logs for PHP errors
+  </Accordion>
+
+  <Accordion title="Token Generation Failed">
+    **Problem:** Cannot generate API token
+
+    **Solution:**
+    - Ensure WooCommerce configuration is saved first
+    - Check that the application URL and email are valid
+    - Verify database connectivity
+    - Try disconnecting and reconfiguring
+  </Accordion>
+
+  <Accordion title="Duplicates Not Skipped">
+    **Problem:** Same customers imported multiple times
+
+    **Solution:**
+    - TelemanAI checks for duplicate phone numbers automatically
+    - If duplicates appear, check for variations in phone format:
+      - +1234567890
+      - 1234567890
+      - (123) 456-7890
+    - Normalize phone numbers in WooCommerce before import
+  </Accordion>
+
+  <Accordion title="Campaign Not Triggering">
+    **Problem:** Order events don't trigger campaigns
+
+    **Solution:**
+    - Verify webhook URL is configured in WordPress
+    - Check that campaign ID exists and is active
+    - Ensure the order status matches the hook:
+      - `woocommerce_order_status_processing`
+      - `woocommerce_order_status_completed`
+    - Review TelemanAI webhook logs
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Warning>
+  **Important Recommendations:**
+  - Always test campaigns with a small customer segment first
+  - Respect customer preferences and opt-out requests
+  - Comply with TCPA and GDPR regulations
+  - Use appropriate call times based on customer timezone
+  - Implement rate limiting for bulk campaigns
+  - Keep customer data synchronized between systems
+</Warning>
+
+## Advanced Features
+
+### Custom Order Meta
+
+Include custom order fields in campaigns:
+
+```php
+trigger_teleman_campaign([
+    'campaign_id' => 103,
+    'contact' => [
+        'name' => $name,
+        'phone' => $phone,
+        'order_id' => $order_id,
+        'custom_field' => $order->get_meta('_custom_field'),
+        'product_names' => implode(', ', wp_list_pluck($order->get_items(), 'name'))
+    ]
+]);
+```
+
+### Product-Specific Campaigns
+
+Trigger campaigns for specific products:
+
+```php
+add_action('woocommerce_order_status_processing', function($order_id) {
+    $order = wc_get_order($order_id);
+    
+    foreach ($order->get_items() as $item) {
+        $product_id = $item->get_product_id();
+        
+        // Trigger specific campaign for product ID 42
+        if ($product_id == 42) {
+            trigger_teleman_campaign([
+                'campaign_id' => 104, // Product-specific campaign
+                'contact' => [
+                    'name' => $order->get_billing_first_name(),
+                    'phone' => $order->get_billing_phone(),
+                    'product_name' => $item->get_name()
+                ]
+            ]);
+        }
+    }
+});
+```
+
+### Subscription Integration
+
+For WooCommerce Subscriptions:
+
+```php
+// Renewal reminder
+add_action('woocommerce_scheduled_subscription_payment', function($subscription_id) {
+    $subscription = wcs_get_subscription($subscription_id);
+    
+    trigger_teleman_campaign([
+        'campaign_id' => 105,
+        'contact' => [
+            'name' => $subscription->get_billing_first_name(),
+            'phone' => $subscription->get_billing_phone(),
+            'renewal_date' => $subscription->get_date('next_payment')
+        ]
+    ]);
+});
+
+// Cancellation follow-up
+add_action('woocommerce_subscription_status_cancelled', function($subscription) {
+    trigger_teleman_campaign([
+        'campaign_id' => 106,
+        'contact' => [
+            'name' => $subscription->get_billing_first_name(),
+            'phone' => $subscription->get_billing_phone()
+        ]
+    ]);
+});
+```
+
+## Performance Optimization
+
+### Batch Processing
+
+For large customer bases, process imports in batches:
+
+```php
+// Fetch 100 customers at a time
+$page = 1;
+$per_page = 100;
+
+do {
+    $customers = get_woocommerce_customers($page, $per_page);
+    import_to_teleman($customers);
+    $page++;
+} while (count($customers) === $per_page);
+```
+
+### Caching
+
+Cache customer data to reduce API calls:
+
+```php
+function get_woocommerce_customers_cached() {
+    $cache_key = 'teleman_woo_customers';
+    $customers = get_transient($cache_key);
+    
+    if (false === $customers) {
+        $customers = fetch_woocommerce_customers();
+        set_transient($cache_key, $customers, HOUR_IN_SECONDS);
+    }
+    
+    return $customers;
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="WordPress Integration" icon="wordpress" href="/integrations/wordpress">
+    Learn about WordPress integration
+  </Card>
+  <Card title="Campaign Automation" icon="robot" href="/api/campaigns/overview">
+    Automate campaigns based on events
+  </Card>
+  <Card title="Customer Segmentation" icon="filter" href="/features/contacts">
+    Create customer segments
+  </Card>
+  <Card title="Analytics" icon="chart-bar" href="/integrations/woocommerce">
+    Track WooCommerce campaign performance
+  </Card>
+</CardGroup>

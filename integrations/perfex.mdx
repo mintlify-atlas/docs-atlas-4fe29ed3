@@ -1,0 +1,565 @@
+---
+title: "Perfex CRM Integration"
+description: "Connect TelemanAI with Perfex CRM to sync contacts and automate campaigns"
+icon: "briefcase"
+---
+
+## Overview
+
+The Perfex CRM integration allows you to:
+
+- Import contacts from Perfex CRM
+- Sync customer and lead data automatically
+- Trigger campaigns based on CRM events
+- Keep contact information synchronized
+- Track campaign results in your CRM
+
+## Prerequisites
+
+- Perfex CRM installation (v2.3+)
+- Admin access to Perfex CRM
+- TelemanAI plugin for Perfex CRM
+- API access enabled in Perfex
+
+## Setup Instructions
+
+<Steps>
+  <Step title="Install TelemanAI Plugin in Perfex">
+    1. Download the TelemanAI plugin for Perfex CRM
+    2. Extract to `perfex_crm/modules/teleman/`
+    3. In Perfex admin, go to **Setup** → **Modules**
+    4. Find "TelemanAI Integration" and click **Activate**
+  </Step>
+
+  <Step title="Configure Perfex in TelemanAI">
+    1. Log in to TelemanAI dashboard
+    2. Navigate to **Integrations** → **Perfex CRM**
+    3. Enter your Perfex configuration:
+
+    ```
+    Perfex URL: https://your-crm.com
+    Admin Email: admin@your-crm.com
+    ```
+
+    <Note>
+      The admin email must match a staff member in Perfex CRM.
+    </Note>
+
+    4. Click **Save Configuration**
+  </Step>
+
+  <Step title="Generate API Token">
+    1. In TelemanAI, click **Generate Token**
+    2. This sends a request to your Perfex installation
+    3. Perfex validates the email and generates a token
+    4. The token is automatically saved in TelemanAI
+
+    <Warning>
+      If token generation fails, verify:
+      - The Perfex URL is correct and accessible
+      - The admin email exists in Perfex
+      - The TelemanAI plugin is activated
+    </Warning>
+  </Step>
+
+  <Step title="Verify Connection">
+    Click **Test Connection** to ensure:
+    - TelemanAI can reach your Perfex installation
+    - The API token is valid
+    - Data can be fetched successfully
+  </Step>
+</Steps>
+
+## Token Generation Flow
+
+The integration uses a secure token exchange:
+
+### Request from TelemanAI
+
+```php
+// API Endpoint
+GET {PERFEX_URL}/teleman_token?email={ADMIN_EMAIL}
+```
+
+### Response from Perfex
+
+```json
+[
+  "success",
+  "Token generated successfully",
+  "abc123def456ghi789jkl"
+]
+```
+
+If the email doesn't exist:
+
+```json
+[
+  "error",
+  "Email not found in Perfex CRM",
+  null
+]
+```
+
+## Importing Contacts from Perfex
+
+<Steps>
+  <Step title="Fetch Contacts">
+    In TelemanAI:
+
+    1. Go to **Integrations** → **Perfex CRM**
+    2. Click **Fetch Data**
+    3. TelemanAI retrieves all contacts from Perfex
+  </Step>
+
+  <Step title="Review Contact Preview">
+    The system displays fetched contacts:
+
+    - Contact name (firstname + lastname)
+    - Phone number
+    - Email address
+    - Company name
+    - Contact type (customer/lead)
+  </Step>
+
+  <Step title="Import to TelemanAI">
+    1. Review the contact list
+    2. Click **Store Contacts**
+    3. Contacts are imported with reference "perfex crm"
+    4. Duplicates (same phone number) are automatically skipped
+    5. Success message: "X new contacts stored"
+  </Step>
+</Steps>
+
+## API Endpoints
+
+### Fetch Contacts Endpoint
+
+```php
+// API Endpoint
+GET {PERFEX_URL}/teleman?email={ADMIN_EMAIL}&token={API_TOKEN}
+```
+
+**Response Format:**
+
+```json
+[
+  {
+    "firstname": "John",
+    "lastname": "Doe",
+    "phonenumber": "+1234567890",
+    "email": "john@example.com",
+    "company": "Acme Corp",
+    "type": "customer"
+  },
+  {
+    "firstname": "Jane",
+    "lastname": "Smith",
+    "phonenumber": "+0987654321",
+    "email": "jane@example.com",
+    "company": "Tech Solutions",
+    "type": "lead"
+  }
+]
+```
+
+## Perfex Plugin Implementation
+
+### Module Structure
+
+```
+perfex_crm/modules/teleman/
+├── teleman.php              # Main module file
+├── controllers/
+│   └── Teleman.php           # Controller
+├── views/
+│   └── settings.php          # Settings page
+└── install.php              # Installation script
+```
+
+### Token Generation Endpoint
+
+**controllers/Teleman.php:**
+
+```php
+<?php
+defined('BASEPATH') or exit('No direct script access allowed');
+
+class Teleman extends App_Controller
+{
+    public function token()
+    {
+        $email = $this->input->get('email');
+        
+        // Verify email exists in staff
+        $this->load->model('staff_model');
+        $staff = $this->staff_model->get('', ['email' => $email]);
+        
+        if (!$staff) {
+            echo json_encode(['error', 'Email not found in Perfex CRM', null]);
+            return;
+        }
+        
+        // Generate token
+        $token = bin2hex(random_bytes(32));
+        
+        // Store token in database
+        $this->db->where('email', $email);
+        $this->db->update('tblstaff', ['teleman_token' => $token]);
+        
+        echo json_encode(['success', 'Token generated successfully', $token]);
+    }
+    
+    public function contacts()
+    {
+        $email = $this->input->get('email');
+        $token = $this->input->get('token');
+        
+        // Verify token
+        $this->load->model('staff_model');
+        $staff = $this->staff_model->get('', [
+            'email' => $email,
+            'teleman_token' => $token
+        ]);
+        
+        if (!$staff) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            return;
+        }
+        
+        // Get all contacts
+        $this->load->model('clients_model');
+        $contacts = $this->clients_model->get();
+        
+        $result = [];
+        foreach ($contacts as $contact) {
+            // Get primary contact person
+            $this->db->where('userid', $contact->userid);
+            $this->db->where('is_primary', 1);
+            $contact_person = $this->db->get('tblcontacts')->row();
+            
+            if ($contact_person && !empty($contact_person->phonenumber)) {
+                $result[] = [
+                    'firstname' => $contact_person->firstname,
+                    'lastname' => $contact_person->lastname,
+                    'phonenumber' => $contact_person->phonenumber,
+                    'email' => $contact_person->email,
+                    'company' => $contact->company,
+                    'type' => 'customer'
+                ];
+            }
+        }
+        
+        // Also get leads
+        $this->load->model('leads_model');
+        $leads = $this->leads_model->get();
+        
+        foreach ($leads as $lead) {
+            if (!empty($lead->phonenumber)) {
+                $result[] = [
+                    'firstname' => $lead->name,
+                    'lastname' => '',
+                    'phonenumber' => $lead->phonenumber,
+                    'email' => $lead->email,
+                    'company' => $lead->company,
+                    'type' => 'lead'
+                ];
+            }
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($result);
+    }
+}
+```
+
+### Routes Configuration
+
+**perfex_crm/application/config/routes.php:**
+
+Add these routes:
+
+```php
+$route['teleman_token'] = 'teleman/teleman/token';
+$route['teleman'] = 'teleman/teleman/contacts';
+```
+
+## Controller Reference
+
+TelemanAI controller implementation (see `PerfexController.php`):
+
+### Key Methods
+
+| Method | Description | Line Reference |
+|--------|-------------|----------------|
+| `index()` | Display integration page | 16-27 |
+| `store()` | Save Perfex configuration | 29-60 |
+| `generate_token()` | Request token from Perfex | 65-133 |
+| `fetch_data()` | Fetch contacts from Perfex | 138-209 |
+| `store_to_database()` | Import contacts to TelemanAI | 214-260 |
+
+### Routes
+
+Defined in `routes/perfex.php`:
+
+| Route | Method | Controller Action |
+|-------|--------|-------------------|
+| `/dashboard/perfex` | GET | `index` |
+| `/dashboard/perfex/store` | POST | `store` |
+| `/dashboard/perfex/token` | POST | `generate_token` |
+| `/dashboard/perfex/fetch_data` | GET | `fetch_data` |
+| `/dashboard/perfex/store_data` | GET | `store_to_database` |
+
+## Database Storage
+
+Configuration stored in `third_party` table:
+
+```sql
+INSERT INTO third_party (
+    user_id,
+    application_name,
+    application_url,
+    user_email,
+    user_token
+) VALUES (
+    1,
+    'perfex',
+    'https://your-crm.com',
+    'admin@your-crm.com',
+    'generated_token_here'
+);
+```
+
+Imported contacts:
+
+```sql
+INSERT INTO contacts (
+    user_id,
+    name,
+    phone,
+    country,
+    reference
+) VALUES (
+    1,
+    'John Doe',
+    '+1234567890',
+    NULL,
+    'perfex crm'
+);
+```
+
+## Campaign Triggers
+
+### Trigger on New Customer
+
+In Perfex plugin:
+
+```php
+hooks()->add_action('after_client_added', function($client_id) {
+    $client = get_client($client_id);
+    
+    // Get primary contact
+    $contact = $this->db->where('userid', $client_id)
+                        ->where('is_primary', 1)
+                        ->get('tblcontacts')
+                        ->row();
+    
+    if ($contact && !empty($contact->phonenumber)) {
+        // Trigger welcome call
+        trigger_teleman_campaign([
+            'campaign_id' => 201,
+            'contact' => [
+                'name' => $contact->firstname . ' ' . $contact->lastname,
+                'phone' => $contact->phonenumber,
+                'company' => $client->company
+            ]
+        ]);
+    }
+});
+```
+
+### Trigger on Invoice Overdue
+
+```php
+hooks()->add_action('after_invoice_updated', function($invoice_id) {
+    $invoice = get_invoice_by_id($invoice_id);
+    
+    if ($invoice->status == 'overdue') {
+        $client = get_client($invoice->clientid);
+        $contact = get_primary_contact($invoice->clientid);
+        
+        trigger_teleman_campaign([
+            'campaign_id' => 202,
+            'contact' => [
+                'name' => $contact->firstname . ' ' . $contact->lastname,
+                'phone' => $contact->phonenumber,
+                'invoice_number' => $invoice->number,
+                'amount_due' => $invoice->total
+            ]
+        ]);
+    }
+});
+```
+
+### Trigger on Lead Status Change
+
+```php
+hooks()->add_action('lead_status_changed', function($lead_id, $status_id) {
+    $lead = get_lead($lead_id);
+    
+    // Trigger campaign when lead becomes "Hot"
+    if ($status_id == 3) { // Hot lead status ID
+        trigger_teleman_campaign([
+            'campaign_id' => 203,
+            'contact' => [
+                'name' => $lead->name,
+                'phone' => $lead->phonenumber,
+                'source' => $lead->source
+            ]
+        ]);
+    }
+});
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Token Generation Failed">
+    **Problem:** "The connection is failed" error
+
+    **Solution:**
+    - Verify Perfex URL is correct and accessible
+    - Ensure the TelemanAI plugin is installed and activated
+    - Check that the email exists in Perfex staff
+    - Test the endpoint manually:
+      ```bash
+      curl "https://your-crm.com/teleman_token?email=admin@your-crm.com"
+      ```
+    - Review Perfex error logs
+  </Accordion>
+
+  <Accordion title="No Contacts Fetched">
+    **Problem:** Fetch returns empty or fails
+
+    **Solution:**
+    - Verify contacts have phone numbers in Perfex
+    - Check that primary contacts are set for customers
+    - Ensure the API token is valid
+    - Test the contacts endpoint:
+      ```bash
+      curl "https://your-crm.com/teleman?email=admin@your-crm.com&token=YOUR_TOKEN"
+      ```
+  </Accordion>
+
+  <Accordion title="Authentication Error">
+    **Problem:** 401 Unauthorized when fetching data
+
+    **Solution:**
+    - Regenerate the API token
+    - Verify email and token match in the request
+    - Check that the token hasn't been modified in the database
+    - Ensure the staff member still exists in Perfex
+  </Accordion>
+
+  <Accordion title="Module Not Found">
+    **Problem:** TelemanAI plugin doesn't appear in Perfex
+
+    **Solution:**
+    - Verify plugin is in correct directory: `modules/teleman/`
+    - Check file permissions (755 for directories, 644 for files)
+    - Ensure `teleman.php` exists in the module root
+    - Clear Perfex cache
+    - Check Perfex system requirements are met
+  </Accordion>
+
+  <Accordion title="Duplicate Contacts">
+    **Problem:** Same contacts imported multiple times
+
+    **Solution:**
+    - TelemanAI checks phone numbers to prevent duplicates
+    - Ensure phone numbers are formatted consistently in Perfex
+    - Normalize phone formats before import
+    - Check the `reference` field to identify source
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Warning>
+  **Security Recommendations:**
+  - Use HTTPS for both Perfex and TelemanAI
+  - Never expose API tokens in client-side code
+  - Implement IP whitelisting for API access
+  - Rotate tokens periodically
+  - Store tokens in encrypted database fields
+  - Log all API access attempts
+  - Use Perfex's built-in security features
+</Warning>
+
+## Advanced Configuration
+
+### Custom Fields Mapping
+
+Map Perfex custom fields to TelemanAI:
+
+```php
+$result[] = [
+    'firstname' => $contact_person->firstname,
+    'lastname' => $contact_person->lastname,
+    'phonenumber' => $contact_person->phonenumber,
+    'email' => $contact_person->email,
+    'company' => $contact->company,
+    'type' => 'customer',
+    'custom_field_1' => get_custom_field_value($contact->userid, 'preferred_contact_time'),
+    'custom_field_2' => get_custom_field_value($contact->userid, 'timezone')
+];
+```
+
+### Selective Contact Sync
+
+Sync only specific customer groups:
+
+```php
+// Only sync customers in group ID 3
+$this->db->where('groups_in', 3);
+$contacts = $this->clients_model->get();
+```
+
+### Webhook Integration
+
+Receive updates from TelemanAI:
+
+```php
+// In Perfex plugin
+public function webhook()
+{
+    $data = json_decode(file_get_contents('php://input'), true);
+    
+    if ($data['event'] === 'call_completed') {
+        // Update contact activity
+        $this->db->insert('tblcontactsactivity', [
+            'contact_id' => $data['contact_id'],
+            'description' => 'Called via TelemanAI: ' . $data['status'],
+            'date' => date('Y-m-d H:i:s')
+        ]);
+    }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Contact Management" icon="users" href="/guides/managing-contacts">
+    Manage your Perfex contacts in TelemanAI
+  </Card>
+  <Card title="Campaign Automation" icon="robot" href="/api/campaigns/overview">
+    Automate campaigns based on CRM events
+  </Card>
+  <Card title="Analytics" icon="chart-line" href="/features/analytics">
+    Track campaign performance
+  </Card>
+  <Card title="API Reference" icon="code" href="/integrations/perfex">
+    Complete API documentation
+  </Card>
+</CardGroup>

@@ -1,0 +1,606 @@
+---
+title: Voice AI Assistants
+description: Create intelligent AI-powered voice assistants with natural conversation capabilities using VAPI integration
+icon: robot
+---
+
+## Overview
+
+TelemanAI integrates with VAPI to provide advanced AI voice assistant capabilities. Create intelligent conversational agents that can handle customer inquiries, qualify leads, schedule appointments, and more - all with natural, human-like voice interactions.
+
+<CardGroup cols={2}>
+  <Card title="Natural Conversations" icon="comments">
+    AI-powered conversations that understand context and intent
+  </Card>
+  <Card title="Multiple AI Models" icon="brain">
+    Support for OpenAI, Azure OpenAI, and more
+  </Card>
+  <Card title="Voice Customization" icon="microphone">
+    Choose from multiple voice providers and voices
+  </Card>
+  <Card title="Knowledge Base" icon="book">
+    Upload documents to train your assistant
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+### VAPI Configuration
+
+Before creating AI assistants, configure your VAPI API keys:
+
+```php
+// From VapiController.php:70-86 - Setup VAPI Keys
+public function setupStore(Request $request)
+{
+    if (demo()) {
+        smilify('warning', 'This feature is disabled in demo mode');
+        return back();
+    }
+    
+    overWriteEnvFile('VAPI_API_KEY', $request->vapi_api_key);
+    overWriteEnvFile('VAPI_PUBLIC_KEY', $request->vapi_public_key);
+    
+    activity('voice ai', 'updated vapi api key');
+    smilify('success', 'Vapi api key updated successfully');
+    
+    Artisan::call('optimize:clear');
+    
+    return back();
+}
+```
+
+<Steps>
+  <Step title="Get VAPI Keys">
+    Sign up at [VAPI.ai](https://vapi.ai) and obtain your API keys
+  </Step>
+  
+  <Step title="Configure Keys">
+    Enter your VAPI API Key and Public Key in the Voice AI setup page
+  </Step>
+  
+  <Step title="Connect Twilio">
+    Link your Twilio provider to enable phone number integration
+  </Step>
+  
+  <Step title="Create Assistant">
+    Build your first AI voice assistant
+  </Step>
+</Steps>
+
+## Creating AI Assistants
+
+### Basic Configuration
+
+Create a new AI assistant with essential settings:
+
+```php
+// From VapiController.php:156-301 - Create Assistant
+public function createAssistant(Request $request)
+{
+    $data = [
+        'name' => $request->name,
+        'firstMessage' => $request->firstMessage,
+        'voicemailDetectionEnabled' => filter_var($request->input('voicemailDetectionEnabled'), FILTER_VALIDATE_BOOLEAN),
+        'voicemailMessage' => $request->voicemailMessage,
+        'endCallMessage' => $request->endCallMessage,
+        
+        // Transcriber configuration
+        'transcriber' => [
+            'provider' => $request->input('transcriber.provider', 'deepgram'),
+            'model' => $request->input('transcriber.model', 'nova-2-general'),
+            'language' => 'en',
+            'keywords' => []
+        ],
+        
+        // AI Model configuration
+        'model' => [
+            'model' => $request->model['model'],
+            'messages' => [
+                [
+                    'content' => $request->summaryPrompt,
+                    'role' => 'system'
+                ]
+            ],
+            'provider' => $request->model['provider'],
+            'emotionRecognitionEnabled' => true,
+            'temperature' => floatval($request->input('model.temperature', 0.7)),
+            'maxTokens' => intval($request->input('model.maxTokens', 500)),
+        ],
+        
+        // Voice configuration
+        'voice' => [
+            'provider' => $request->voice['provider'],
+            'voiceId' => $request->voice['voiceId']
+        ],
+        
+        'recordingEnabled' => true,
+    ];
+    
+    $response = $this->vapiService->createAssistant($data);
+    
+    VapiAssistant::updateOrCreate(
+        ['slug' => Str::slug($request->name), 'user_id' => auth()->id()],
+        [
+            'name' => $response['name'],
+            'assistantId' => $response['id'],
+            'data' => json_encode($data),
+            'response' => json_encode($response)
+        ]
+    );
+}
+```
+
+### Assistant Configuration Options
+
+<AccordionGroup>
+  <Accordion title="Basic Information" icon="info-circle">
+    - **Name** - Identifier for your assistant
+    - **First Message** - Greeting when the call connects
+    - **End Call Message** - Goodbye message before hanging up
+    - **Voicemail Message** - What to say if voicemail is detected
+  </Accordion>
+  
+  <Accordion title="AI Model Settings" icon="brain">
+    ```javascript
+    model: {
+      provider: 'openai',           // openai, azure-openai, together-ai, anyscale, openrouter
+      model: 'gpt-4',               // Specific model version
+      temperature: 0.7,             // Creativity (0.0-1.0)
+      maxTokens: 500,               // Max response length
+      emotionRecognitionEnabled: true,
+      semanticCachingEnabled: true  // Cache common responses
+    }
+    ```
+    
+    **Temperature Guide:**
+    - 0.0-0.3: Focused and deterministic
+    - 0.4-0.7: Balanced creativity
+    - 0.8-1.0: Creative and varied
+  </Accordion>
+  
+  <Accordion title="Voice Configuration" icon="microphone">
+    Choose from multiple voice providers:
+    
+    - **ElevenLabs** - High-quality, natural voices
+    - **PlayHT** - Professional voice library
+    - **Rime** - Fast, efficient voices
+    - **Deepgram** - Low-latency voices
+    
+    Each provider offers multiple voice IDs for different tones and accents.
+  </Accordion>
+  
+  <Accordion title="Transcriber Settings" icon="closed-captioning">
+    ```javascript
+    transcriber: {
+      provider: 'deepgram',        // deepgram, gladia, talkscriber
+      model: 'nova-2-general',     // Transcription model
+      language: 'en',              // Language code
+      keywords: []                 // Custom keywords for accuracy
+    }
+    ```
+    
+    **Recommended:** Use Deepgram's `nova-2-general` for best accuracy.
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Features
+
+### Knowledge Base Integration
+
+Upload documents to train your assistant:
+
+```php
+// From VapiController.php:121-148 - Upload Knowledge Base Files
+public function fileUpload(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:pdf,txt,docx|max:2048',
+    ]);
+    
+    $file = $request->file('file');
+    $uploadResponse = $this->vapiService->uploadFile($file);
+    
+    if (isset($uploadResponse['error'])) {
+        return back()->withErrors(['error' => 'Failed to upload file: ' . $uploadResponse['error']]);
+    }
+    
+    VapiFiles::create([
+        'file_id' => $uploadResponse['id'],
+        'file_name' => $uploadResponse['name'],
+        'url' => $uploadResponse['url'],
+        'bytes' => $uploadResponse['bytes'],
+        'mimetype' => $uploadResponse['mimetype'],
+        'path' => $uploadResponse['path'],
+        'user_id' => auth()->id(),
+    ]);
+    
+    smilify('success', 'File uploaded and saved successfully.');
+    return back();
+}
+```
+
+<Steps>
+  <Step title="Upload Documents">
+    Upload PDF, TXT, or DOCX files containing information for your assistant
+  </Step>
+  
+  <Step title="Link to Assistant">
+    Add the file IDs to your assistant's knowledge base configuration
+  </Step>
+  
+  <Step title="Test Knowledge">
+    Make test calls to verify the assistant can retrieve information from your documents
+  </Step>
+</Steps>
+
+### Call Forwarding
+
+Configure your assistant to forward calls to human agents:
+
+```php
+// From VapiController.php:242-258 - Forwarding Configuration
+if ($request->has('callForwarding')) {
+    $forwardingPhoneNumbers = [];
+    foreach ($request->forwardingPhoneNumbers as $index => $phoneNumber) {
+        $forwardingPhoneNumbers[] = [
+            'number' => $phoneNumber,
+            'message' => $request->forwardingMessages[$index],
+            'sipUri' => null
+        ];
+    }
+    
+    $data['forwardingPhoneNumbers'] = $forwardingPhoneNumbers;
+    
+    // Backward compatibility
+    if (!empty($forwardingPhoneNumbers)) {
+        $data['forwardingPhoneNumber'] = $forwardingPhoneNumbers[0]['number'];
+    }
+}
+```
+
+<Note>
+  Your assistant can intelligently forward calls based on conversation context, keywords, or customer requests.
+</Note>
+
+### Timing Configuration
+
+Fine-tune conversation timing:
+
+```php
+// From VapiController.php:220-225 - Timing Settings
+'silenceTimeoutSeconds' => intval($request->input('silenceTimeoutSeconds', 30)),
+'responseDelaySeconds' => floatval($request->input('responseDelaySeconds', 1.0)),
+'llmRequestDelaySeconds' => 0.1,
+'numWordsToInterruptAssistant' => intval($request->input('numWordsToInterruptAssistant', 2)),
+'maxDurationSeconds' => intval($request->input('maxDurationSeconds', 600)),
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `silenceTimeoutSeconds` | 30 | How long to wait for customer response |
+| `responseDelaySeconds` | 1.0 | Pause before assistant responds |
+| `numWordsToInterruptAssistant` | 2 | Words needed to interrupt AI |
+| `maxDurationSeconds` | 600 | Maximum call duration (10 minutes) |
+
+### Call Experience Settings
+
+```php
+// From VapiController.php:228-231 - Experience Settings
+'backgroundSound' => $this->validateBackgroundSound($request->input('backgroundSound', 'office')),
+'endCallPhrases' => $request->filled('endCallPhrases') 
+    ? array_map('trim', explode(',', $request->endCallPhrases)) 
+    : ['goodbye', 'thank you', 'have a great day'],
+```
+
+<Accordion title="Background Sound Options">
+  Add ambient sound for realism:
+  - `off` - No background sound
+  - `office` - Office environment sounds
+  - Custom URL - Upload your own background audio
+</Accordion>
+
+## Making AI-Powered Calls
+
+### Initiate Outbound Calls
+
+Start AI-powered calls programmatically:
+
+```php
+// From VapiController.php:88-113 - Create Phone Call
+public function createPhoneCall(Request $request)
+{
+    $validatedData = $request->validate([
+        'phone' => 'required|string',
+        'provider_phone' => 'required|string',
+        'assistantId' => 'required|string',
+    ]);
+    
+    $callData = [
+        'maxDurationSeconds' => 10,
+        'assistantId' => $validatedData['assistantId'],
+        'customer' => [
+            'number' => $validatedData['phone'],
+            'name' => $validatedData['phone']
+        ],
+        'phoneNumber' => [
+            'twilioAccountSid' => getProvider(auth()->id(), $validatedData['provider_phone'])->account_sid,
+            'twilioAuthToken' => getProvider(auth()->id(), $validatedData['provider_phone'])->auth_token,
+            'twilioPhoneNumber' => getProvider(auth()->id(), $validatedData['provider_phone'])->phone
+        ]
+    ];
+    
+    $call = $this->vapiService->createPhoneCall($callData);
+    smilify('success', 'Call Queued Successfully');
+    return back();
+}
+```
+
+## Phone Number Integration
+
+### Link Twilio Numbers to Assistants
+
+Connect your Twilio phone numbers to AI assistants:
+
+```php
+// From VapiController.php:461-486 - Create Phone Number
+public function createPhoneNumber($provider_id)
+{
+    try {
+        $provider = getProviderById($provider_id);
+        
+        if (!$provider) {
+            smilify('error', 'Provider not found');
+            return back();
+        }
+        
+        $data = [
+            'provider' => 'twilio',
+            'number' => $provider->phone,
+            'twilioAccountSid' => $provider->account_sid,
+            'twilioAuthToken' => $provider->auth_token,
+            'name' => $provider->provider_name
+        ];
+        
+        $phoneNumber = $this->vapiService->createPhoneNumber($data);
+        
+        return back()->with('success', 'Phone number created successfully.');
+    } catch (\Exception $e) {
+        smilify('error', 'Failed to create phone number.');
+        return back();
+    }
+}
+```
+
+### Update Phone Number Settings
+
+Assign assistants to specific phone numbers:
+
+```php
+// From VapiController.php:35-50 - Update Phone Number
+public function phone_number_update(Request $request, $phoneNumberId)
+{
+    $data = [
+        'fallbackDestination' => [
+            'type' => 'number',
+            'number' => $request->input('number')
+        ],
+        'name' => $request->input('name'),
+        'assistantId' => $request->input('assistantId')
+    ];
+    
+    $this->vapiService->updatePhoneNumber($phoneNumberId, $data);
+    
+    smilify('success', 'Phone number updated successfully');
+    return back();
+}
+```
+
+<Note>
+  When a call comes to your Twilio number, it will automatically route to the assigned AI assistant.
+</Note>
+
+## Call Logs and Analytics
+
+### View Call History
+
+Access detailed logs of all AI-powered calls:
+
+```php
+// From VapiController.php:19-26 - Dashboard with Call Logs
+public function index()
+{
+    $callLogs = collect($this->vapiService->listCalls())->sortByDesc('createdAt')->toArray();
+    $reportService = new VapiReportService($callLogs);
+    return view('backend.voiceai.index', [
+        'reportService' => $reportService,
+    ]);
+}
+```
+
+### Individual Call Details
+
+```php
+// From VapiController.php:58-63 - Get Call Details
+public function call_logs($id = null)
+{
+    $calls = collect($this->vapiService->listCalls())->sortByDesc('createdAt')->toArray();
+    $getCall = $id === null ? null : $this->vapiService->getCall($id);
+    return view('backend.voiceai.call_logs.index', compact('calls', 'getCall'));
+}
+```
+
+Call logs include:
+- **Transcript** - Full conversation transcript
+- **Duration** - Call length
+- **Cost** - Call cost breakdown
+- **Sentiment** - Detected customer sentiment
+- **Summary** - AI-generated call summary
+- **Recording** - Audio recording URL
+
+## Assistant Data Structure
+
+```sql
+-- From migrations/2024_06_02_131108_create_vapi_assistants_table.php
+CREATE TABLE vapi_assistants (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    slug VARCHAR(255),                -- URL-friendly identifier
+    user_id BIGINT UNSIGNED,          -- Owner
+    assistantId TEXT,                 -- VAPI assistant ID
+    data JSON,                        -- Configuration data
+    response JSON,                    -- VAPI API response
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+## Updating Assistants
+
+Modify existing assistant configuration:
+
+```php
+// From VapiController.php:303-447 - Update Assistant
+public function updateAssistant(Request $request, $id)
+{
+    $assistant = VapiAssistant::where('assistantId', $id)->firstOrFail();
+    
+    $data = [
+        'name' => $request->name,
+        'firstMessage' => $request->firstMessage,
+        // ... same configuration as create ...
+        'metadata' => [
+            'updated_by' => auth()->user()->name ?? 'system',
+            'updated_at' => now()->toISOString(),
+            'version' => '1.1'
+        ]
+    ];
+    
+    DB::beginTransaction();
+    
+    try {
+        $response = $this->vapiService->updateAssistant($id, $data);
+        
+        if (isset($response['error'])) {
+            throw new \Exception($response['error'] ?? 'Unknown error occurred');
+        }
+        
+        $assistant->update([
+            'name' => $response['name'],
+            'data' => json_encode($data),
+            'response' => json_encode($response)
+        ]);
+        
+        DB::commit();
+        smilify('success', 'Assistant updated successfully.');
+        return back();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        smilify('error', 'Failed to update assistant.');
+        return back();
+    }
+}
+```
+
+## Deleting Assistants
+
+```php
+// From VapiController.php:449-459 - Delete Assistant
+public function deleteAssistant($id)
+{
+    try {
+        $response = $this->vapiService->deleteAssistant($id);
+        VapiAssistant::where('assistantId', $response['id'])->delete();
+        smilify('success', 'Assistant deleted successfully.');
+        return redirect()->back();
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Failed to delete assistant.');
+    }
+}
+```
+
+<Warning>
+  Deleting an assistant removes it from VAPI and your TelemanAI account. This cannot be undone.
+</Warning>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Clear Prompts" icon="message">
+    Write clear, specific system prompts that define your assistant's personality and capabilities.
+  </Card>
+  
+  <Card title="Test Thoroughly" icon="vial">
+    Make test calls to verify your assistant handles various scenarios correctly.
+  </Card>
+  
+  <Card title="Monitor Performance" icon="chart-line">
+    Regularly review call logs and transcripts to improve your assistant.
+  </Card>
+  
+  <Card title="Set Boundaries" icon="shield">
+    Define what your assistant can and cannot do in the system prompt.
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Lead Qualification" icon="filter">
+    Create an assistant that asks qualifying questions and routes high-value leads to sales agents.
+    
+    **System Prompt Example:**
+    ```
+    You are a friendly lead qualification assistant. Ask about the customer's 
+    business needs, budget, and timeline. If they have a budget over $10,000 
+    and need a solution within 3 months, forward them to a sales representative.
+    ```
+  </Accordion>
+  
+  <Accordion title="Appointment Scheduling" icon="calendar">
+    Build an assistant that checks availability and books appointments.
+    
+    **System Prompt Example:**
+    ```
+    You are an appointment scheduling assistant. Gather the customer's name, 
+    preferred date and time, and reason for appointment. Check if the requested 
+    time is available and confirm the booking.
+    ```
+  </Accordion>
+  
+  <Accordion title="Customer Support" icon="headset">
+    Deploy an assistant that answers common questions using your knowledge base.
+    
+    **System Prompt Example:**
+    ```
+    You are a customer support assistant. Answer questions about our products 
+    and services using the knowledge base. If you cannot answer a question or 
+    the customer is upset, transfer them to a human agent.
+    ```
+  </Accordion>
+  
+  <Accordion title="Survey Collection" icon="clipboard-question">
+    Create an assistant that conducts surveys and collects feedback.
+    
+    **System Prompt Example:**
+    ```
+    You are a survey assistant. Ask the customer to rate their recent experience 
+    from 1-10 and provide any feedback. Thank them for their time and end the call.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Features
+
+<CardGroup cols={3}>
+  <Card title="Voice Campaigns" icon="bullhorn" href="/features/campaigns">
+    Use AI assistants in automated campaigns
+  </Card>
+  
+  <Card title="Web Dialer" icon="phone" href="/features/dialer">
+    Test your AI assistant with the web dialer
+  </Card>
+  
+  <Card title="Analytics" icon="chart-bar" href="/features/analytics">
+    Analyze AI assistant performance metrics
+  </Card>
+</CardGroup>

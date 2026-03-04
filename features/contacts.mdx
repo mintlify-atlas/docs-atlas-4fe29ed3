@@ -1,0 +1,472 @@
+---
+title: Contact Management
+description: Organize and manage your contacts with groups, custom fields, and bulk import capabilities
+icon: address-book
+---
+
+## Overview
+
+TelemanAI's contact management system provides a centralized database for all your contacts. Organize contacts into groups, import from CSV files, and maintain detailed contact information for targeted campaigns.
+
+<CardGroup cols={2}>
+  <Card title="Individual Contacts" icon="user">
+    Store detailed information for each contact
+  </Card>
+  <Card title="Contact Groups" icon="users">
+    Organize contacts into targeted groups
+  </Card>
+  <Card title="Bulk Import" icon="file-csv">
+    Import thousands of contacts from CSV files
+  </Card>
+  <Card title="Export Data" icon="download">
+    Export contacts for backup or external use
+  </Card>
+</CardGroup>
+
+## Managing Contacts
+
+### Creating a Contact
+
+Add individual contacts with detailed information:
+
+```php
+// From ContactController.php:37-86 - Create Contact
+public function store(Request $request)
+{
+    $contact = new Contact;
+    $contact->user_id = Auth::id();
+    $contact->name = $request->name;
+    
+    // Phone number with automatic + prefix
+    $contact->phone = Str::startsWith($request->phone, '+') 
+                      ? $request->phone 
+                      : '+'.$request->phone;
+    
+    $contact->email = $request->email;
+    $contact->country = $request->country;
+    $contact->gender = $request->gender;
+    $contact->dob = $request->dob;
+    $contact->profession = $request->profession;
+    $contact->save();
+    
+    // Assign to groups
+    if ($request->groups_ids != null) {
+        foreach ($request->groups_ids as $group_id) {
+            $group_contact = new GroupContact;
+            $group_contact->contact_id = $contact->id;
+            $group_contact->group_id = $group_id;
+            $group_contact->save();
+        }
+    }
+}
+```
+
+### Contact Fields
+
+Each contact can store the following information:
+
+<AccordionGroup>
+  <Accordion title="Required Fields" icon="asterisk">
+    - **Name** - Full name of the contact
+    - **Phone** - Phone number in international format (auto-adds + prefix)
+  </Accordion>
+  
+  <Accordion title="Optional Fields" icon="circle-info">
+    - **Email** - Email address for multi-channel campaigns
+    - **Country** - Country of residence
+    - **Gender** - Gender for personalization
+    - **Date of Birth** - Birthday for special campaigns
+    - **Profession** - Job title or industry
+    - **Reference** - Custom reference field for your use
+  </Accordion>
+</AccordionGroup>
+
+### Contact Data Structure
+
+```sql
+-- From migrations/2022_06_14_120852_create_contacts_table.php
+CREATE TABLE contacts (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    user_id BIGINT UNSIGNED,
+    name TEXT,
+    phone TEXT,
+    email TEXT,
+    country TEXT,
+    gender TEXT,
+    dob TEXT,
+    profession TEXT,
+    reference TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+## Contact Groups
+
+### Creating Groups
+
+Organize contacts into groups for targeted campaigns:
+
+```php
+// From ContactController.php:199-234 - Create Group
+public function group_store(Request $request)
+{
+    $group = new Group;
+    $group->user_id = Auth::id();
+    $group->name = $request->name;
+    $group->description = $request->description;
+    $group->status = $request->status == 1 ? true : false;
+    $group->save();
+}
+```
+
+<Steps>
+  <Step title="Create Group">
+    Provide a name and description for your contact group
+  </Step>
+  
+  <Step title="Assign Contacts">
+    Select which contacts to include in the group
+  </Step>
+  
+  <Step title="Use in Campaigns">
+    Reference the group when creating voice or SMS campaigns
+  </Step>
+</Steps>
+
+### Group Assignment
+
+Assign contacts to groups individually or in bulk:
+
+```php
+// From ContactController.php:329-365 - Assign Contacts to Group
+public function group_assign_store($group_id, $group_slug, Request $request)
+{
+    $group = Group::find($group_id);
+    
+    // Delete existing assignments
+    GroupContact::where('group_id', $group_id)->delete();
+    
+    // Store each contact in the group
+    foreach ($request->contact_ids as $contact) {
+        $group_contact = new GroupContact;
+        $group_contact->user_id = Auth::id();
+        $group_contact->group_id = $group_id;
+        $group_contact->contact_id = $contact;
+        $group_contact->save();
+    }
+}
+```
+
+### Assign All Contacts
+
+Quickly assign all your contacts to a group:
+
+```php
+// From ContactController.php:448-484 - Assign All Contacts
+public function assign_all_contacts($group_id)
+{
+    // Delete existing contacts in the group
+    GroupContact::where('group_id', $group_id)->delete();
+    
+    $contacts = Contact::where('user_id', Auth::id())->get();
+    $groupContactData = [];
+    
+    foreach ($contacts as $contact) {
+        $groupContactData[] = [
+            'user_id' => Auth::id(),
+            'group_id' => $group_id,
+            'contact_id' => $contact->id,
+        ];
+    }
+    
+    // Insert in batches for performance
+    $chunkSize = 100;
+    $groupContactChunks = array_chunk($groupContactData, $chunkSize);
+    
+    foreach ($groupContactChunks as $chunk) {
+        GroupContact::insert($chunk);
+    }
+}
+```
+
+<Note>
+  Batch insertion improves performance when assigning thousands of contacts to a group.
+</Note>
+
+### Group Data Structure
+
+```sql
+-- From migrations/2022_06_17_123302_create_groups_table.php
+CREATE TABLE groups (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    user_id BIGINT UNSIGNED,
+    name TEXT,
+    description TEXT,
+    status BOOLEAN,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+## Bulk Import
+
+### CSV Import
+
+Import large contact lists from CSV files:
+
+```php
+// From ContactController.php:379-396 - CSV Import
+public function import(Request $request)
+{
+    // Create user-specific directory
+    $directoryPath = public_path('uploads/csv/' . auth()->id());
+    
+    if (!File::isDirectory($directoryPath)) {
+        File::makeDirectory($directoryPath, 0755, true, true);
+    }
+    
+    // Split large CSV files for processing
+    splitCsv($request->file('csv'));
+    
+    smilify('success', 'Contact imported successfully');
+}
+```
+
+<Steps>
+  <Step title="Prepare CSV File">
+    Format your CSV file with columns for name, phone, email, etc.
+  </Step>
+  
+  <Step title="Upload File">
+    Upload your CSV file through the contacts interface
+  </Step>
+  
+  <Step title="Processing">
+    The system automatically processes your file in chunks
+  </Step>
+  
+  <Step title="Check Progress">
+    Monitor import progress with the status indicator
+  </Step>
+</Steps>
+
+### CSV Format
+
+Your CSV file should include these columns:
+
+```csv
+name,phone,email,country,gender,dob,profession
+John Doe,+1234567890,john@example.com,USA,Male,1990-01-01,Engineer
+Jane Smith,+0987654321,jane@example.com,UK,Female,1985-05-15,Manager
+```
+
+<Warning>
+  Phone numbers must include the country code. The system will automatically add a + prefix if missing.
+</Warning>
+
+### Import Progress Tracking
+
+Check the status of your CSV import:
+
+```php
+// From ContactController.php:527-530 - Check Import Status
+public function check_import_status()
+{
+    return csv_import_progress();
+}
+```
+
+## Contact Search
+
+### Real-Time Search
+
+Search contacts by name or phone number:
+
+```php
+// From ContactController.php:420-436 - Search Contacts
+public function searchContacts(Request $request)
+{
+    if ($request->has('search') && $request->search != '') {
+        $search = $request->search;
+        $contacts = Contact::HasAgent()
+                    ->where(function($query) use ($search) {
+                        $query->where('name', 'LIKE', "%$search%")
+                              ->orWhere('phone', 'LIKE', "%$search%");
+                    })
+                    ->orderBy('name', 'asc')
+                    ->simplePaginate(50);
+    } else {
+        $contacts = allContacts();
+    }
+    
+    return view('backend.contacts.index', compact('contacts'));
+}
+```
+
+### AJAX Contact Lookup
+
+Find contacts dynamically for campaign selection:
+
+```php
+// From ContactController.php:517-525 - AJAX Contact Search
+public function getContactsAjax(Request $request)
+{
+    $query = $request->get('query');
+    $results = Contact::where('name', 'like', '%' . $query . '%')
+                    ->orWhere('phone', 'like', '%' . $query . '%')
+                    ->get();
+    
+    return response()->json($results);
+}
+```
+
+## Exporting Contacts
+
+Export your contacts to CSV format:
+
+```php
+// From ContactController.php:371-374 - Export Contacts
+public function export()
+{
+    return Excel::download(new ContactsExport, 'contacts.csv');
+}
+```
+
+Exported files include:
+- All contact information
+- Group memberships
+- Creation dates
+- Custom reference fields
+
+## Contact Lookup by Phone
+
+Find contact information during active calls:
+
+```php
+// From ContactController.php:411-418 - Find Contact by Phone
+public function find_contact_by_number(Request $request)
+{
+    $contact_info = find_contact_by_phone($request->caller_number);
+    
+    return response()->json([
+        'contact_info' => $contact_info,
+    ]);
+}
+```
+
+<Note>
+  This feature is used by the Web Dialer to display contact information during incoming calls.
+</Note>
+
+## Updating Contacts
+
+Modify contact information and group assignments:
+
+```php
+// From ContactController.php:108-164 - Update Contact
+public function update(Request $request, $contact_id)
+{
+    $contact = Contact::where('id', $contact_id)->first();
+    $contact->name = $request->name;
+    $contact->phone = Str::startsWith($request->phone, '+') 
+                      ? $request->phone 
+                      : '+'.$request->phone;
+    $contact->email = $request->email;
+    $contact->country = $request->country;
+    $contact->gender = $request->gender;
+    $contact->dob = $request->dob;
+    $contact->profession = $request->profession;
+    $contact->save();
+    
+    // Update group assignments
+    if ($request->groups_ids != null) {
+        foreach ($request->groups_ids as $group_id) {
+            GroupContact::updateOrCreate([
+                'group_id' => $group_id,
+                'contact_id' => $contact_id
+            ]);
+        }
+    }
+}
+```
+
+## Deleting Contacts
+
+Remove contacts and their associated data:
+
+```php
+// From ContactController.php:169-186 - Delete Contact
+public function destroy($contact_id)
+{
+    $contact = Contact::where('id', $contact_id)->first();
+    
+    // Delete related data
+    $contact->group_contacts()->delete();
+    $contact->campaign_voice()->delete();
+    $contact->campaign_voice_status_log()->delete();
+    $contact->delete();
+}
+```
+
+<Warning>
+  Deleting a contact removes all campaign history and lead tracking data. This action cannot be undone.
+</Warning>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Clean Data" icon="broom">
+    Maintain clean contact data with proper phone number formats and complete information.
+  </Card>
+  
+  <Card title="Organized Groups" icon="layer-group">
+    Create logical groups based on demographics, interests, or campaign types.
+  </Card>
+  
+  <Card title="Regular Backups" icon="cloud-arrow-down">
+    Export your contacts regularly for backup and data security.
+  </Card>
+  
+  <Card title="Update Records" icon="pen-to-square">
+    Keep contact information current by updating records after each interaction.
+  </Card>
+</CardGroup>
+
+## Integration with Campaigns
+
+Contacts and groups are the foundation of your campaigns:
+
+<Steps>
+  <Step title="Import Contacts">
+    Add contacts manually or via CSV import
+  </Step>
+  
+  <Step title="Create Groups">
+    Organize contacts into targeted groups
+  </Step>
+  
+  <Step title="Build Campaigns">
+    Select groups when creating voice or SMS campaigns
+  </Step>
+  
+  <Step title="Track Results">
+    View contact-level results and update records based on outcomes
+  </Step>
+</Steps>
+
+## Related Features
+
+<CardGroup cols={3}>
+  <Card title="Voice Campaigns" icon="bullhorn" href="/features/campaigns">
+    Create campaigns targeting your contact groups
+  </Card>
+  
+  <Card title="SMS Marketing" icon="comment-sms" href="/features/sms-marketing">
+    Send bulk SMS to contact groups
+  </Card>
+  
+  <Card title="Web Dialer" icon="phone" href="/features/dialer">
+    Call contacts directly from the web interface
+  </Card>
+</CardGroup>

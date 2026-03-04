@@ -1,0 +1,195 @@
+---
+title: Introduction to TelemanAI
+description: Comprehensive telemarketing platform powered by conversational AI for voice campaigns, contact management, and multi-channel communication
+---
+
+## What is TelemanAI?
+
+TelemanAI is a comprehensive telemarketing platform that combines conversational AI technology with robust campaign management capabilities. Built on Laravel 8, it provides a scalable SaaS solution for managing voice campaigns, contact lists, and multi-channel communication workflows.
+
+<Info>
+  **Version 6.0.0** - The latest release includes enhanced AI capabilities, improved multi-channel support, and expanded payment gateway integrations.
+</Info>
+
+## Key Capabilities
+
+### Voice Campaign Management
+
+TelemanAI leverages AI-powered voice technology to automate and optimize your telemarketing campaigns:
+
+- **AI Conversational Engine**: Powered by VAPI and OpenAI for natural, human-like interactions
+- **Twilio Integration**: Full support for voice calls with SIP trunk configuration
+- **Campaign Orchestration**: Create, schedule, and manage multiple campaigns simultaneously
+- **Real-time Analytics**: Track campaign performance with detailed metrics and reporting
+
+### Contact Management
+
+Efficiently organize and segment your contact database:
+
+- **Contact Import/Export**: Bulk operations with Excel support via Maatwebsite
+- **Phone Number Validation**: Integrated with Telesign and MessageBird for verification
+- **List Segmentation**: Organize contacts into targeted lists for precise campaigns
+- **Contact History**: Track all interactions and call outcomes
+
+### Multi-Channel Communication
+
+<Note>
+  TelemanAI supports multiple communication channels beyond voice calls.
+</Note>
+
+- **SMS Marketing**: Reach customers via text messages
+- **Email Integration**: SMTP support with customizable templates
+- **Voice Calls**: Primary channel with full recording and transcription
+- **Notifications**: Real-time alerts via Pusher integration
+
+### Enterprise SaaS Features
+
+- **Multi-Tenancy**: Isolated database architecture for each tenant
+- **Subscription Management**: Trial periods, plan management, and automatic renewals
+- **Payment Processing**: 15+ payment gateway integrations (Stripe, PayPal, Razorpay, etc.)
+- **User Management**: Role-based access control and team collaboration
+- **White-Label Ready**: Customizable branding and domain configuration
+
+## Platform Architecture
+
+### Technology Stack
+
+TelemanAI is built on a modern, scalable technology stack:
+
+**Backend Framework**
+- Laravel 8 (PHP 7.3+ or 8.0+)
+- MySQL database with multi-tenant support
+- Queue-based job processing for scalability
+
+**Frontend**
+- Laravel UI with Bootstrap integration
+- React components for interactive features
+- Responsive design with mobile support
+
+**Third-Party Integrations**
+- **Voice AI**: VAPI, OpenAI
+- **Telephony**: Twilio (Voice, SMS, SIP)
+- **Payments**: Stripe, PayPal, Razorpay, Flutterwave, Paystack, and more
+- **Phone Verification**: Telesign, MessageBird
+- **Email**: SMTP, AWS SES
+- **Authentication**: Google OAuth
+
+### Multi-Tenant Architecture
+
+<Info>
+  TelemanAI uses a database-per-tenant architecture, ensuring complete data isolation and security for each customer.
+</Info>
+
+The platform supports two deployment modes:
+
+1. **Single Tenant**: Deploy for a single organization with full customization
+2. **Multi-Tenant SaaS**: Host multiple customers with isolated databases and billing
+
+## Who Should Use TelemanAI?
+
+### Ideal Use Cases
+
+**Telemarketing Agencies**
+- Manage multiple client campaigns from a single platform
+- White-label the solution for your brand
+- Scale operations with AI-powered automation
+
+**Sales Teams**
+- Automate outbound sales calls with AI agents
+- Track lead engagement and conversion rates
+- Integrate with CRM systems (Perfex CRM support)
+
+**Marketing Departments**
+- Run multi-channel campaigns (voice, SMS, email)
+- Segment audiences for targeted messaging
+- Analyze campaign performance with built-in analytics
+
+**Contact Centers**
+- Reduce operational costs with AI automation
+- Handle high-volume outbound campaigns
+- Maintain compliance with call recording and logging
+
+**SaaS Providers**
+- Deploy as a white-label telemarketing platform
+- Monetize with built-in subscription and payment processing
+- Offer value-added telephony services to customers
+
+## Core Features Overview
+
+### Campaign Management
+- Create and schedule voice campaigns
+- Configure AI conversation scripts
+- Set campaign parameters (timing, frequency, retry logic)
+- Monitor real-time campaign progress
+
+### Contact & List Management
+- Import contacts from CSV/Excel
+- Validate phone numbers before campaigns
+- Create dynamic contact segments
+- Manage do-not-call lists and compliance
+
+### AI & Voice Configuration
+- Configure VAPI AI assistants
+- Customize conversation flows
+- Set up Twilio voice numbers
+- Configure SIP trunks for enterprise telephony
+
+### Billing & Subscriptions
+- Create subscription plans with trial periods (default 7 days)
+- Accept payments via 15+ payment gateways
+- Automate subscription renewals and expiry alerts
+- Generate invoices and payment receipts
+
+### Reporting & Analytics
+- Campaign performance metrics
+- Call outcome tracking
+- Cost analysis and ROI calculations
+- Export reports to PDF/Excel
+
+## Security & Compliance
+
+<Warning>
+  Always secure your production environment with proper SSL/TLS certificates, strong passwords, and regular security updates.
+</Warning>
+
+- **Data Encryption**: All sensitive data encrypted at rest and in transit
+- **Multi-Tenant Isolation**: Complete database separation between tenants
+- **Authentication**: Secure login with Google OAuth support
+- **API Security**: Token-based authentication with Laravel Sanctum
+- **GDPR Ready**: Data export and deletion capabilities
+- **Call Recording Compliance**: Configurable recording policies
+
+## Getting Started
+
+Ready to deploy TelemanAI? Continue to the next sections:
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Set up TelemanAI on your server with step-by-step instructions
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Configure environment variables, integrations, and payment gateways
+  </Card>
+</CardGroup>
+
+## System Requirements
+
+Before installation, ensure your server meets these requirements:
+
+- **PHP**: Version 7.3, 7.4, 8.0, or 8.1
+- **Database**: MySQL 5.7+ or MariaDB 10.3+
+- **Web Server**: Apache 2.4+ or Nginx 1.18+
+- **Memory**: Minimum 2GB RAM (4GB+ recommended)
+- **Storage**: 10GB+ available disk space
+- **Extensions**: See full list in Installation guide
+
+## Support & Resources
+
+- **Author**: The Code Studio
+- **Version**: 6.0.0
+- **License**: MIT
+- **Documentation**: Comprehensive guides for all features
+
+<Note>
+  For demo environments, set `DEMO="YES"` in your `.env` file to enable demo mode with restricted actions.
+</Note>

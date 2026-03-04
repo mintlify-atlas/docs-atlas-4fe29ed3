@@ -1,0 +1,239 @@
+---
+title: "Twilio Integration"
+description: "Configure Twilio for voice calls and SMS in TelemanAI"
+icon: "phone"
+---
+
+## Overview
+
+TelemanAI integrates with Twilio to power voice calls and SMS campaigns. This integration enables you to:
+
+- Make outbound voice calls through Twilio
+- Send SMS messages
+- Configure SIP trunks for advanced call routing
+- Track call costs and usage
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- A Twilio account ([Sign up here](https://www.twilio.com/try-twilio))
+- Your Twilio Account SID and Auth Token
+- At least one Twilio phone number
+
+## Configuration Steps
+
+<Steps>
+  <Step title="Get Twilio Credentials">
+    1. Log in to your [Twilio Console](https://console.twilio.com/)
+    2. From the dashboard, locate your **Account SID** and **Auth Token**
+    3. Copy these credentials for the next step
+    
+    <Note>
+      Keep your Auth Token secure. Never share it publicly or commit it to version control.
+    </Note>
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Add your Twilio credentials to the `.env` file:
+
+    ```bash
+    TWILIO_ACCOUNT_SID="AC085429e8d240706a0826fff4674535d3"
+    TWILIO_AUTH_TOKEN="your_auth_token_here"
+    TWILIO_NUMBER="+1234567890"
+    ```
+
+    <Warning>
+      Replace the example values with your actual Twilio credentials.
+    </Warning>
+  </Step>
+
+  <Step title="Purchase a Phone Number">
+    If you don't have a Twilio phone number:
+
+    1. Go to **Phone Numbers** → **Buy a Number** in the Twilio Console
+    2. Select a number with Voice and SMS capabilities
+    3. Complete the purchase
+    4. Add the number to your `.env` file as `TWILIO_NUMBER`
+  </Step>
+
+  <Step title="Configure Webhooks (Optional)">
+    To receive call status updates and handle inbound calls:
+
+    1. In Twilio Console, go to your phone number settings
+    2. Under **Voice & Fax**, set:
+       - **A CALL COMES IN**: `https://your-domain.com/api/twilio/voice`
+       - **METHOD**: POST
+    3. Under **Messaging**, set:
+       - **A MESSAGE COMES IN**: `https://your-domain.com/api/twilio/sms`
+       - **METHOD**: POST
+
+    <Note>
+      Replace `your-domain.com` with your actual TelemanAI installation domain.
+    </Note>
+  </Step>
+</Steps>
+
+## SIP Trunk Configuration
+
+For advanced call routing and better call quality, configure a SIP trunk:
+
+<Steps>
+  <Step title="Enable SIP Trunk">
+    Update your `.env` file:
+
+    ```bash
+    SIP_TRUNK="YES"
+    TWILIO_SIP_ENABLED=true
+    TWILIO_SIP_SECURE=true
+    ```
+  </Step>
+
+  <Step title="Configure SIP Domain">
+    Set up your SIP domain configuration:
+
+    ```bash
+    TWILIO_SIP_DEFAULT_DOMAIN="your-sip-domain.pstn.twilio.com"
+    TWILIO_SIP_DEFAULT_AUTH_TYPE="IP_ACL"
+    TWILIO_SIP_VOICE_URL="https://your-domain.com/api/sip/inbound"
+    TWILIO_SIP_LOGGING=true
+    ```
+  </Step>
+
+  <Step title="Create SIP Trunk in Twilio">
+    1. Navigate to **Elastic SIP Trunking** in Twilio Console
+    2. Click **Create new SIP Trunk**
+    3. Enter a friendly name
+    4. Configure **Origination** settings with your server IP
+    5. Configure **Termination** settings for outbound calls
+    6. Save the configuration
+  </Step>
+
+  <Step title="Configure Authentication">
+    Choose your authentication method:
+
+    **IP Access Control List (Recommended):**
+    - Add your server's public IP address to the IP ACL
+    - More secure for production environments
+
+    **Credential List:**
+    - Create username/password credentials
+    - Useful for dynamic IP environments
+  </Step>
+</Steps>
+
+## Testing the Integration
+
+<Steps>
+  <Step title="Verify Credentials">
+    Run the configuration test:
+
+    ```bash
+    php artisan twilio:test
+    ```
+
+    This command verifies your Twilio credentials are valid.
+  </Step>
+
+  <Step title="Make a Test Call">
+    1. Navigate to **Campaigns** in TelemanAI
+    2. Create a new voice campaign
+    3. Add a test contact
+    4. Launch the campaign
+    5. Verify the call is placed successfully
+  </Step>
+</Steps>
+
+## Environment Variables Reference
+
+| Variable | Description | Required | Example |
+|----------|-------------|----------|----------|
+| `TWILIO_ACCOUNT_SID` | Your Twilio Account SID | Yes | `AC085429e8d240706a...` |
+| `TWILIO_AUTH_TOKEN` | Your Twilio Auth Token | Yes | `f528f37ca76b821f21...` |
+| `TWILIO_NUMBER` | Your Twilio phone number | Yes | `+1234567890` |
+| `TWILIO_APP_SID` | Twilio Application SID (for SIP) | No | `AP...` |
+| `SIP_TRUNK` | Enable SIP trunk functionality | No | `YES` or `NO` |
+| `TWILIO_SIP_ENABLED` | Enable SIP calls | No | `true` or `false` |
+| `TWILIO_SIP_DEFAULT_DOMAIN` | Your SIP domain | No | `domain.pstn.twilio.com` |
+| `TWILIO_SIP_SECURE` | Use secure SIP (SIPS) | No | `true` |
+| `TWILIO_SIP_DEFAULT_AUTH_TYPE` | Authentication type | No | `IP_ACL` or `CREDENTIAL_LIST` |
+| `TWILIO_SIP_VOICE_URL` | Voice webhook URL | No | `https://...` |
+| `TWILIO_SIP_LOGGING` | Enable call logging | No | `true` |
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Authentication Failed Error">
+    **Problem:** `HTTP 401 - Authentication failed`
+
+    **Solution:**
+    - Verify your Account SID and Auth Token are correct
+    - Check for extra spaces in your `.env` file
+    - Ensure you're using the correct credentials (not test credentials in production)
+  </Accordion>
+
+  <Accordion title="Unable to Create Call">
+    **Problem:** Calls fail to connect
+
+    **Solution:**
+    - Verify your Twilio phone number is active
+    - Check that you have sufficient balance in your Twilio account
+    - Ensure the destination number is in a valid format (E.164 format recommended)
+    - Check Twilio's debugger for detailed error messages
+  </Accordion>
+
+  <Accordion title="SIP Trunk Not Connecting">
+    **Problem:** SIP trunk shows as offline
+
+    **Solution:**
+    - Verify your server's IP is whitelisted in the IP ACL
+    - Check that firewall rules allow SIP traffic (ports 5060-5061)
+    - Ensure your SIP domain is correctly configured
+    - Test connectivity using Twilio's SIP trunk debugger
+  </Accordion>
+
+  <Accordion title="Webhook Not Receiving Events">
+    **Problem:** Call status updates not received
+
+    **Solution:**
+    - Verify your webhook URL is publicly accessible
+    - Check that your SSL certificate is valid
+    - Ensure your server is not blocking Twilio's IP ranges
+    - Review Twilio's webhook logs in the Console
+  </Accordion>
+</AccordionGroup>
+
+## Cost Tracking
+
+TelemanAI automatically tracks Twilio call costs. To view cost reports:
+
+1. Navigate to **Analytics** → **Call Costs**
+2. View detailed cost breakdowns by campaign
+3. Export reports for billing purposes
+
+<Note>
+  Call costs are fetched from Twilio's API and updated in real-time.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Voice Campaign" icon="bullhorn" href="/features/campaigns">
+    Learn how to create your first voice campaign
+  </Card>
+  <Card title="SMS Marketing" icon="message" href="/features/sms-marketing">
+    Set up SMS campaigns with Twilio
+  </Card>
+  <Card title="Call Analytics" icon="chart-line" href="/features/analytics">
+    Track and analyze call performance
+  </Card>
+  <Card title="Advanced Routing" icon="route" href="/guides/departments-agents">
+    Configure advanced call routing rules
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Twilio Voice Documentation](https://www.twilio.com/docs/voice)
+- [Twilio SIP Trunking Guide](https://www.twilio.com/docs/sip-trunking)
+- [Twilio Status Page](https://status.twilio.com/)

@@ -1,0 +1,497 @@
+---
+title: SMS Marketing
+description: Send targeted SMS campaigns to your contacts with scheduling and provider management
+icon: comment-sms
+---
+
+## Overview
+
+TelemanAI's SMS marketing feature enables you to send bulk text messages to your contact groups. Deliver time-sensitive promotions, reminders, and notifications directly to your customers' mobile phones with high engagement rates.
+
+<CardGroup cols={2}>
+  <Card title="Bulk Messaging" icon="messages">
+    Send SMS to thousands of contacts simultaneously
+  </Card>
+  <Card title="Campaign Scheduling" icon="calendar-days">
+    Schedule messages for optimal delivery times
+  </Card>
+  <Card title="Multiple Providers" icon="server">
+    Use Twilio or third-party SMS providers
+  </Card>
+  <Card title="Cost Tracking" icon="dollar-sign">
+    Monitor SMS costs by country and provider
+  </Card>
+</CardGroup>
+
+## Creating SMS Campaigns
+
+### Basic SMS Campaign Setup
+
+Start an SMS campaign with your contact group:
+
+```php
+// From SmsController.php:14-67 - Start SMS Campaign
+public function start_campaign($campaign_id, $slug = null)
+{
+    $campaign = Campaign::where('id', $campaign_id)->first();
+    
+    // Check account balance
+    if (check_balance($campaign->user_id) == false) {
+        smilify('error', 'Insufficient balance');
+        return back();
+    }
+    
+    // Validate campaign configuration
+    if ($campaign->group_id == null || $campaign->provider == null) {
+        smilify('error', 'Campaign has no group or provider');
+        return back();
+    }
+    
+    // Check hourly quota
+    if (check_quota_hourly($campaign->user_id, $campaign->provider) == 'crossed') {
+        smilify('warning', 'Hourly quota crossed');
+        return back();
+    }
+    
+    // Verify Twilio connection
+    if (check_twilio_connection(account_sid($campaign->provider)) == false) {
+        smilify('error', 'Connection Failed. Please check with administrator');
+        return back();
+    }
+    
+    // Create SMS schedule
+    $sms = new SmsSchedule;
+    $sms->user_id = Auth::id();
+    $sms->campaign_id = $campaign_id;
+    $sms->group_id = $campaign->group_id;
+    $sms->provider = $campaign->provider;
+    $sms->start_at = Carbon::now();
+    $sms->status = 'PENDING';
+    $sms->third_party_provider = request('third_party_provider') ?? null;
+    $sms->save();
+    
+    // Save message content
+    if ($sms->save()) {
+        $content = SmsContent::updateOrCreate(
+            ['campaign_id' =>  $campaign_id],
+            ['content' => request('content')]
+        );
+    }
+    
+    smilify('success', 'Campaign Started successfully');
+    return back();
+}
+```
+
+<Steps>
+  <Step title="Create Campaign">
+    Set up a campaign with a name and description
+  </Step>
+  
+  <Step title="Select Group">
+    Choose which contact group will receive the SMS
+  </Step>
+  
+  <Step title="Choose Provider">
+    Select your SMS provider (Twilio or third-party)
+  </Step>
+  
+  <Step title="Compose Message">
+    Write your SMS message (keep under 160 characters for single SMS)
+  </Step>
+  
+  <Step title="Schedule or Send">
+    Send immediately or schedule for a future time
+  </Step>
+</Steps>
+
+## SMS Campaign Data Structure
+
+```sql
+-- From migrations/2023_04_19_190736_create_sms_schedules_table.php
+CREATE TABLE sms_schedules (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    user_id BIGINT UNSIGNED,
+    campaign_id BIGINT UNSIGNED,
+    group_id BIGINT UNSIGNED,              -- Target contact group
+    provider BIGINT UNSIGNED,               -- Twilio provider
+    start_at TEXT,                          -- When to send
+    status TEXT,                            -- PENDING, RUNNING, COMPLETED
+    third_party_provider TEXT,              -- Optional third-party SMS provider
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+## Sending Individual SMS
+
+### Manual SMS from Campaign Interface
+
+Send SMS to individual contacts during voice campaigns:
+
+```php
+// From CampaignController.php:495-593 - Send Individual SMS
+public function send_sms(Request $request)
+{
+    if (demo()) {
+        return response()->json([
+            'status' => 'warning',
+            'message' => 'This feature is disabled in demo mode'
+        ]);
+    }
+    
+    try {
+        // Check balance
+        if (check_balance(Auth::id()) == false) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Insufficient balance'
+            ]);
+        }
+        
+        // Format phone number
+        $phone = phone_number($request->phone_number);
+        if (substr($phone, 0, 1) != '+') {
+            $phone = '+'.$phone;
+        }
+        
+        // Validate phone number and check SMS cost
+        $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+        $NumberProto = $phoneUtil->parse($phone, null);
+        
+        // Check SMS cost for the destination country
+        $check_TwilioSms_Cost = TwilioCallCost::where('code', $NumberProto->getCountryCode())
+                                                ->with('twilio_sms_cost')
+                                                ->first();
+        
+        if (!$check_TwilioSms_Cost) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unsupported number.',
+            ]);
+        }
+        
+        // Send SMS via Twilio
+        twilioSendSMS($request->campaign_id, phone_number($request->phone_number), $request->message);
+        
+        // Log SMS status
+        CampaignSmsStatusLog($request->campaign_id, 
+                            $request->phone_number, 
+                            Auth::id(), 
+                            getUserInfo(Auth::id())->name, 
+                            $request->message);
+        
+        // Store in messages table
+        store_to_messages($request->phone_number, $request->message, auth()->id(), $request->campaign_id);
+        
+        // Deduct cost from account
+        deduct_credit_by_using_sms($check_TwilioSms_Cost->twilio_sms_cost->teleman_sms_cost);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Message sent successfully to ' . phone_number($request->phone_number)
+        ]);
+        
+    } catch (\Throwable $th) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $th->getMessage()
+        ]);
+    }
+}
+```
+
+## SMS Message Formatting
+
+### Character Limits
+
+<Note>
+  SMS messages are limited to **160 characters** for GSM-7 encoding. If you use Unicode characters (emojis, special symbols), the limit drops to **70 characters** per segment.
+</Note>
+
+### Multi-Part Messages
+
+Longer messages are automatically split into multiple SMS segments:
+
+| Encoding | Single SMS | Multi-Part Segment |
+|----------|------------|--------------------|
+| **GSM-7** | 160 characters | 153 characters each |
+| **Unicode** | 70 characters | 67 characters each |
+
+<Warning>
+  Each SMS segment is billed separately. A 300-character message may cost 2-3x a single SMS.
+</Warning>
+
+### Personalization
+
+Use merge tags to personalize messages:
+
+```text
+Hi {name}, your appointment is scheduled for {date} at {time}. 
+Reply YES to confirm or call us at {company_phone}.
+```
+
+Available merge tags:
+- `{name}` - Contact name
+- `{phone}` - Contact phone number
+- `{email}` - Contact email
+- `{country}` - Contact country
+- `{custom_field}` - Any custom contact field
+
+## SMS Cost Management
+
+### Country-Based Pricing
+
+SMS costs vary by destination country:
+
+```php
+// From CampaignController.php:528-544 - Check SMS Cost by Country
+$phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+$NumberProto = $phoneUtil->parse($phone, null);
+
+// Get SMS cost for the country code
+$check_TwilioSms_Cost = TwilioCallCost::where('code', $NumberProto->getCountryCode())
+                                        ->with('twilio_sms_cost')
+                                        ->first();
+
+if (!$check_TwilioSms_Cost) {
+    return response()->json([
+        'status' => 'error',
+        'message' => 'Unsupported number.',
+    ]);
+}
+
+// Deduct appropriate cost
+deduct_credit_by_using_sms($check_TwilioSms_Cost->twilio_sms_cost->teleman_sms_cost);
+```
+
+<Accordion title="Understanding SMS Pricing">
+  SMS pricing is determined by:
+  - **Destination Country** - Different countries have different rates
+  - **Message Length** - Longer messages cost more (multiple segments)
+  - **Message Type** - Standard vs. Unicode encoding
+  - **Provider** - Twilio rates vary by region
+  
+  Check the pricing for your target countries before launching large campaigns.
+</Accordion>
+
+## Provider Configuration
+
+### Twilio SMS Provider
+
+By default, SMS is sent through your configured Twilio provider:
+
+```php
+// SMS sent through Twilio provider
+$sms->provider = $campaign->provider;  // Your Twilio provider ID
+```
+
+### Third-Party SMS Providers
+
+Alternatively, use third-party SMS gateways:
+
+```php
+// From SmsController.php:54 - Third-Party Provider
+$sms->third_party_provider = request('third_party_provider') ?? null;
+```
+
+Supported third-party providers:
+- Custom SMS gateways
+- Regional SMS providers
+- Bulk SMS services
+
+<Note>
+  Third-party providers may offer better rates for specific countries or regions.
+</Note>
+
+## Campaign Status Tracking
+
+### SMS Schedule Status
+
+Track the progress of your SMS campaigns:
+
+| Status | Description |
+|--------|-------------|
+| `PENDING` | Campaign is scheduled but not started |
+| `RUNNING` | SMS messages are being sent |
+| `COMPLETED` | All messages have been sent |
+| `FAILED` | Campaign encountered errors |
+| `PAUSED` | Campaign has been temporarily stopped |
+
+### Message Delivery Status
+
+Individual message status is logged:
+
+```php
+// From CampaignController.php:557-561 - SMS Status Logging
+CampaignSmsStatusLog($request->campaign_id, 
+                    $request->phone_number, 
+                    Auth::id(), 
+                    getUserInfo(Auth::id())->name, 
+                    $request->message);
+```
+
+Status types:
+- **Sent** - Message accepted by provider
+- **Delivered** - Message delivered to recipient
+- **Failed** - Delivery failed
+- **Undelivered** - Could not reach recipient
+
+## SMS Content Management
+
+### Message Storage
+
+SMS content is stored separately from campaign configuration:
+
+```sql
+-- From migrations/2023_04_19_203206_create_sms_contents_table.php
+CREATE TABLE sms_contents (
+    id BIGINT UNSIGNED PRIMARY KEY,
+    campaign_id BIGINT UNSIGNED,
+    content TEXT,                       -- The SMS message text
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+### Message Templates
+
+Create reusable SMS templates:
+
+```php
+// Store SMS content for reuse
+SmsContent::updateOrCreate(
+    ['campaign_id' => $campaign_id],
+    ['content' => request('content')]
+);
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Timing Matters" icon="clock">
+    Send messages during business hours (9 AM - 8 PM) in the recipient's timezone.
+  </Card>
+  
+  <Card title="Clear Call-to-Action" icon="bullseye">
+    Include a clear next step: "Reply YES", "Click here", or "Call now".
+  </Card>
+  
+  <Card title="Opt-Out Option" icon="ban">
+    Always include "Reply STOP to unsubscribe" for compliance.
+  </Card>
+  
+  <Card title="Test First" icon="vial">
+    Send test messages to yourself before launching to thousands.
+  </Card>
+</CardGroup>
+
+## Compliance and Regulations
+
+<Warning>
+  SMS marketing is heavily regulated in many countries. Ensure you comply with:
+  
+  - **TCPA (USA)** - Telephone Consumer Protection Act
+  - **GDPR (EU)** - General Data Protection Regulation  
+  - **CASL (Canada)** - Canadian Anti-Spam Legislation
+  - **Local Laws** - Country-specific regulations
+</Warning>
+
+### Compliance Checklist
+
+<Steps>
+  <Step title="Get Consent">
+    Obtain explicit opt-in consent before sending marketing messages
+  </Step>
+  
+  <Step title="Identify Yourself">
+    Clearly identify your business in every message
+  </Step>
+  
+  <Step title="Provide Opt-Out">
+    Include "Reply STOP to unsubscribe" in all campaigns
+  </Step>
+  
+  <Step title="Honor Unsubscribes">
+    Immediately remove contacts who opt out
+  </Step>
+  
+  <Step title="Respect Timing">
+    Don't send messages during late night or early morning hours
+  </Step>
+</Steps>
+
+## Message History
+
+All sent messages are stored for audit and compliance:
+
+```php
+// From CampaignController.php:569 - Store Message History
+store_to_messages($request->phone_number, 
+                 $request->message, 
+                 auth()->id(), 
+                 $request->campaign_id);
+```
+
+Message history includes:
+- Timestamp of send
+- Recipient phone number
+- Message content
+- Campaign association
+- Delivery status
+- Cost information
+
+## Integration with Voice Campaigns
+
+SMS can be sent as follow-ups to voice campaigns:
+
+<Steps>
+  <Step title="Voice Campaign">
+    Launch a voice campaign to make calls
+  </Step>
+  
+  <Step title="Track Responses">
+    Monitor which contacts answered or didn't answer
+  </Step>
+  
+  <Step title="SMS Follow-Up">
+    Send SMS to contacts who didn't answer or requested callback
+  </Step>
+  
+  <Step title="Multi-Touch Campaign">
+    Combine voice and SMS for higher engagement
+  </Step>
+</Steps>
+
+<Accordion title="Multi-Channel Campaign Example">
+  1. **Day 1:** Send voice campaign to announce new product
+  2. **Day 2:** Send SMS to contacts who didn't answer with link to product page
+  3. **Day 5:** Send reminder SMS to contacts who haven't responded
+  4. **Day 7:** Final SMS with limited-time discount offer
+</Accordion>
+
+## SMS Analytics
+
+Track SMS campaign performance:
+
+- **Delivery Rate** - Percentage successfully delivered
+- **Response Rate** - Percentage who replied
+- **Opt-Out Rate** - Percentage who unsubscribed
+- **Cost Per Message** - Average cost by country
+- **ROI** - Return on investment from campaigns
+
+## Related Features
+
+<CardGroup cols={3}>
+  <Card title="Voice Campaigns" icon="bullhorn" href="/features/campaigns">
+    Combine voice and SMS for multi-touch campaigns
+  </Card>
+  
+  <Card title="Contact Management" icon="address-book" href="/features/contacts">
+    Organize contacts into groups for targeted SMS
+  </Card>
+  
+  <Card title="Analytics" icon="chart-line" href="/features/analytics">
+    Track SMS campaign performance metrics
+  </Card>
+</CardGroup>

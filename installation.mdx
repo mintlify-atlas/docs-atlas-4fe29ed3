@@ -1,0 +1,581 @@
+---
+title: Installation Guide
+description: Step-by-step instructions to install and set up TelemanAI on your server
+---
+
+## Server Requirements
+
+Before installing TelemanAI, ensure your server meets the following requirements:
+
+### PHP Requirements
+
+<Info>
+  TelemanAI supports PHP 7.3, 7.4, 8.0, and 8.1. We recommend PHP 8.0 for optimal performance.
+</Info>
+
+**Required PHP Version**: `^7.3|^8.0`
+
+**Required PHP Extensions**:
+- BCMath
+- Ctype
+- cURL
+- DOM
+- Fileinfo
+- JSON
+- Mbstring
+- OpenSSL
+- PCRE
+- PDO
+- Tokenizer
+- XML
+- GD or Imagick
+- Zip
+
+### Database Requirements
+
+- MySQL 5.7+ or MariaDB 10.3+
+- Recommended: MySQL 8.0 for better performance
+- Ensure your database user has full privileges (CREATE, DROP, ALTER, etc.)
+
+### Web Server
+
+**Apache**:
+- Version 2.4+
+- `mod_rewrite` enabled
+- `.htaccess` support enabled
+
+**Nginx**:
+- Version 1.18+
+- Proper Laravel configuration (see configuration section)
+
+### System Requirements
+
+- **RAM**: Minimum 2GB (4GB+ recommended for production)
+- **Storage**: 10GB+ available disk space
+- **CPU**: 2+ cores recommended
+- **Operating System**: Linux (Ubuntu 20.04+, CentOS 8+, Debian 10+)
+
+### Additional Software
+
+- Composer 2.0+
+- Node.js 14+ and npm (for asset compilation)
+- Redis (optional, for caching and queues)
+- Supervisor (recommended for queue workers)
+
+## Installation Steps
+
+<Steps>
+  <Step title="Download and Extract">
+    Download the TelemanAI package and extract it to your web server directory:
+
+    ```bash
+    # Extract to your web root
+    unzip teleman-ai-v6.0.0.zip -d /var/www/teleman
+    cd /var/www/teleman
+    ```
+
+    <Note>
+      Adjust the path according to your web server configuration. For cPanel environments, extract to `public_html`.
+    </Note>
+  </Step>
+
+  <Step title="Set File Permissions">
+    Configure proper file permissions for Laravel:
+
+    ```bash
+    # Set ownership (replace 'www-data' with your web server user)
+    sudo chown -R www-data:www-data /var/www/teleman
+
+    # Set directory permissions
+    sudo find /var/www/teleman -type d -exec chmod 755 {} \;
+
+    # Set file permissions
+    sudo find /var/www/teleman -type f -exec chmod 644 {} \;
+
+    # Make storage and cache writable
+    sudo chmod -R 775 /var/www/teleman/storage
+    sudo chmod -R 775 /var/www/teleman/bootstrap/cache
+    ```
+
+    <Warning>
+      Never set permissions to 777 in production. This creates serious security vulnerabilities.
+    </Warning>
+
+    **Critical Writable Directories**:
+    - `storage/app/`
+    - `storage/framework/`
+    - `storage/logs/`
+    - `bootstrap/cache/`
+  </Step>
+
+  <Step title="Install PHP Dependencies">
+    Install Laravel and all required packages using Composer:
+
+    ```bash
+    # Install Composer dependencies
+    composer install --optimize-autoloader --no-dev
+    ```
+
+    <Info>
+      The `--no-dev` flag excludes development dependencies. For development environments, run `composer install` without this flag.
+    </Info>
+
+    **Key Dependencies Installed**:
+    - Laravel Framework 8.65+
+    - Twilio SDK for voice/SMS
+    - Payment gateway libraries (Stripe, PayPal, Razorpay, etc.)
+    - Excel import/export (Maatwebsite)
+    - PDF generation (DomPDF)
+    - Many more (see composer.json:7 for full list)
+  </Step>
+
+  <Step title="Configure Environment">
+    Create and configure your `.env` file:
+
+    ```bash
+    # Copy the example environment file
+    cp .env.example .env
+
+    # Generate application key
+    php artisan key:generate
+    ```
+
+    **Edit `.env` with your basic configuration**:
+
+    ```bash
+    APP_NAME="TelemanAI - Telemarketing Conversational AI Application"
+    APP_ENV=production
+    APP_DEBUG=false
+    APP_URL=https://your-domain.com
+
+    # Database Configuration
+    DB_CONNECTION=mysql
+    DB_HOST=localhost
+    DB_PORT=3306
+    DB_DATABASE=your_database_name
+    DB_USERNAME=your_database_user
+    DB_PASSWORD=your_secure_password
+    ```
+
+    <Warning>
+      Set `APP_DEBUG=false` in production to prevent sensitive information leakage.
+    </Warning>
+
+    See the [Configuration](/configuration) guide for detailed environment variable setup.
+  </Step>
+
+  <Step title="Create Database">
+    Create a MySQL database for TelemanAI:
+
+    ```bash
+    # Login to MySQL
+    mysql -u root -p
+    ```
+
+    ```sql
+    -- Create database
+    CREATE DATABASE teleman_ai CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+    -- Create database user (recommended)
+    CREATE USER 'teleman_user'@'localhost' IDENTIFIED BY 'secure_password_here';
+
+    -- Grant privileges
+    GRANT ALL PRIVILEGES ON teleman_ai.* TO 'teleman_user'@'localhost';
+
+    -- For multi-tenant setup, grant additional privileges
+    GRANT CREATE ON *.* TO 'teleman_user'@'localhost';
+
+    FLUSH PRIVILEGES;
+    EXIT;
+    ```
+
+    <Info>
+      For multi-tenant deployments, the application needs CREATE database privileges to create tenant databases automatically.
+    </Info>
+  </Step>
+
+  <Step title="Run Database Migrations">
+    Initialize the database schema:
+
+    ```bash
+    # Run migrations
+    php artisan migrate --force
+
+    # Seed initial data (optional)
+    php artisan db:seed
+    ```
+
+    This will create all necessary tables including:
+    - Users and authentication
+    - Campaigns and contacts
+    - Subscriptions and payments
+    - System settings
+    - Tenant management
+  </Step>
+
+  <Step title="Install Frontend Dependencies">
+    Compile frontend assets:
+
+    ```bash
+    # Install npm packages
+    npm install
+
+    # Build for production
+    npm run production
+    ```
+
+    <Note>
+      For development, use `npm run dev` or `npm run watch` for auto-compilation.
+    </Note>
+  </Step>
+
+  <Step title="Configure Web Server">
+    Set up your web server to point to the `public` directory.
+
+    **Apache Virtual Host**:
+    ```apache
+    <VirtualHost *:80>
+        ServerName your-domain.com
+        DocumentRoot /var/www/teleman/public
+
+        <Directory /var/www/teleman/public>
+            AllowOverride All
+            Require all granted
+        </Directory>
+
+        ErrorLog ${APACHE_LOG_DIR}/teleman_error.log
+        CustomLog ${APACHE_LOG_DIR}/teleman_access.log combined
+    </VirtualHost>
+    ```
+
+    **Nginx Configuration**:
+    ```nginx
+    server {
+        listen 80;
+        server_name your-domain.com;
+        root /var/www/teleman/public;
+
+        add_header X-Frame-Options "SAMEORIGIN";
+        add_header X-Content-Type-Options "nosniff";
+
+        index index.php;
+
+        charset utf-8;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location = /favicon.ico { access_log off; log_not_found off; }
+        location = /robots.txt  { access_log off; log_not_found off; }
+
+        error_page 404 /index.php;
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/var/run/php/php8.0-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+
+        location ~ /\.(?!well-known).* {
+            deny all;
+        }
+    }
+    ```
+
+    **Enable and restart**:
+    ```bash
+    # Apache
+    sudo a2ensite teleman.conf
+    sudo a2enmod rewrite
+    sudo systemctl restart apache2
+
+    # Nginx
+    sudo ln -s /etc/nginx/sites-available/teleman /etc/nginx/sites-enabled/
+    sudo nginx -t
+    sudo systemctl restart nginx
+    ```
+  </Step>
+
+  <Step title="Configure Queue Worker (Recommended)">
+    Set up Supervisor to run Laravel queue workers:
+
+    ```bash
+    # Install Supervisor
+    sudo apt-get install supervisor
+    ```
+
+    Create `/etc/supervisor/conf.d/teleman-worker.conf`:
+    ```ini
+    [program:teleman-worker]
+    process_name=%(program_name)s_%(process_num)02d
+    command=php /var/www/teleman/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+    autostart=true
+    autorestart=true
+    stopasgroup=true
+    killasgroup=true
+    user=www-data
+    numprocs=2
+    redirect_stderr=true
+    stdout_logfile=/var/www/teleman/storage/logs/worker.log
+    stopwaitsecs=3600
+    ```
+
+    **Start the worker**:
+    ```bash
+    sudo supervisorctl reread
+    sudo supervisorctl update
+    sudo supervisorctl start teleman-worker:*
+    ```
+
+    <Info>
+      Queue workers are essential for processing campaigns, sending emails, and handling background tasks.
+    </Info>
+  </Step>
+
+  <Step title="Configure Scheduled Tasks">
+    Add Laravel scheduler to cron:
+
+    ```bash
+    # Edit crontab
+    sudo crontab -e -u www-data
+    ```
+
+    Add this line:
+    ```
+    * * * * * cd /var/www/teleman && php artisan schedule:run >> /dev/null 2>&1
+    ```
+
+    This enables:
+    - Subscription expiry alerts (configured via `EXPRITY_ALERT_MAIL_DAY`)
+    - Campaign scheduling
+    - Automatic cleanup tasks
+  </Step>
+
+  <Step title="Configure SSL Certificate (Production)">
+    Secure your installation with SSL:
+
+    ```bash
+    # Install Certbot
+    sudo apt-get install certbot python3-certbot-apache
+
+    # For Apache
+    sudo certbot --apache -d your-domain.com
+
+    # For Nginx
+    sudo apt-get install python3-certbot-nginx
+    sudo certbot --nginx -d your-domain.com
+    ```
+
+    Update your `.env`:
+    ```bash
+    APP_URL=https://your-domain.com
+    ```
+
+    <Warning>
+      Always use SSL/TLS in production. Many features (like payment processing) require HTTPS.
+    </Warning>
+  </Step>
+
+  <Step title="Complete Initial Setup">
+    Access your installation and complete the setup wizard:
+
+    ```
+    https://your-domain.com
+    ```
+
+    The installation wizard will guide you through:
+    1. System requirements verification
+    2. Database connection testing
+    3. Admin account creation
+    4. Basic configuration
+
+    <Info>
+      The `APP_INSTALL` variable in `.env` controls the installation wizard. Set to `YES` to enable.
+    </Info>
+  </Step>
+</Steps>
+
+## Post-Installation Steps
+
+### Optimize Performance
+
+```bash
+# Cache configuration
+php artisan config:cache
+
+# Cache routes
+php artisan route:cache
+
+# Cache views
+php artisan view:cache
+
+# Optimize autoloader
+composer dump-autoload --optimize
+```
+
+<Warning>
+  Run `php artisan config:clear` before making `.env` changes, as cached config takes precedence.
+</Warning>
+
+### Verify Installation
+
+Check that everything is working:
+
+```bash
+# Check application status
+php artisan about
+
+# Verify database connection
+php artisan migrate:status
+
+# Check queue worker status
+sudo supervisorctl status teleman-worker:*
+
+# View logs
+tail -f storage/logs/laravel.log
+```
+
+## cPanel Installation
+
+For cPanel environments:
+
+<Steps>
+  <Step title="Upload Files">
+    Upload the package to `public_html` or a subdirectory via File Manager or FTP.
+  </Step>
+
+  <Step title="Configure Database">
+    Create database and user via cPanel MySQL Database Wizard.
+  </Step>
+
+  <Step title="Update .env">
+    Set cPanel-specific variables:
+    ```bash
+    CPANEL="YES"
+    CPANEL_USERNAME="your_cpanel_user"
+    CPANEL_PASSWORD="your_cpanel_password"
+    CPANEL_PRIVILEGED_USER="root"
+    ```
+  </Step>
+
+  <Step title="Run Composer">
+    Use cPanel Terminal or SSH:
+    ```bash
+    composer install --optimize-autoloader --no-dev
+    ```
+  </Step>
+
+  <Step title="Complete Setup">
+    Access your domain and follow the installation wizard.
+  </Step>
+</Steps>
+
+<Note>
+  For cPanel installations, the application can automatically manage subdomains and SSL certificates if configured correctly.
+</Note>
+
+## Troubleshooting
+
+### Common Issues
+
+**500 Internal Server Error**
+- Check file permissions on `storage/` and `bootstrap/cache/`
+- Verify `.htaccess` exists in `public/` directory
+- Check error logs: `storage/logs/laravel.log`
+
+**Database Connection Error**
+- Verify database credentials in `.env`
+- Ensure database exists and user has proper privileges
+- Check database server is running: `sudo systemctl status mysql`
+
+**Blank Page or White Screen**
+- Enable debug mode temporarily: `APP_DEBUG=true`
+- Check PHP error logs
+- Verify all PHP extensions are installed
+
+**Permission Denied Errors**
+```bash
+# Fix storage permissions
+sudo chmod -R 775 storage bootstrap/cache
+sudo chown -R www-data:www-data storage bootstrap/cache
+```
+
+**Composer Memory Limit**
+```bash
+# Increase memory for Composer
+php -d memory_limit=-1 /usr/local/bin/composer install
+```
+
+### Enable Debug Mode (Development Only)
+
+```bash
+# In .env
+APP_DEBUG=true
+APP_ENV=local
+DEBUGBAR_ENABLED=true
+```
+
+<Warning>
+  Never enable debug mode in production. It exposes sensitive information including database credentials.
+</Warning>
+
+## Next Steps
+
+After successful installation:
+
+1. **[Configure Environment](/configuration)**: Set up integrations, payment gateways, and API keys
+2. **Configure Twilio**: Set up voice and SMS capabilities
+3. **Configure VAPI**: Enable AI conversation features
+4. **Set Up Payment Gateways**: Enable subscription processing
+5. **Create Your First Campaign**: Start using TelemanAI
+
+<Info>
+  For detailed configuration of all environment variables and integrations, proceed to the [Configuration Guide](/configuration).
+</Info>
+
+## System Maintenance
+
+### Regular Maintenance Tasks
+
+```bash
+# Clear old logs (run monthly)
+php artisan log:clear
+
+# Clear cache
+php artisan cache:clear
+
+# Optimize application
+php artisan optimize
+
+# Update dependencies (test in staging first)
+composer update
+php artisan migrate
+```
+
+### Backup Recommendations
+
+1. **Database**: Daily automated backups
+2. **Storage**: Backup `storage/app/` (uploaded files)
+3. **Environment**: Secure copy of `.env` file
+4. **Code**: Version control with Git
+
+### Updates
+
+Before updating:
+1. Backup database and files
+2. Test in staging environment
+3. Put application in maintenance mode
+4. Update code and dependencies
+5. Run migrations
+6. Clear caches
+7. Test thoroughly
+8. Disable maintenance mode
+
+```bash
+# Maintenance mode
+php artisan down --message="Updating system" --retry=60
+
+# After updates
+php artisan up
+```

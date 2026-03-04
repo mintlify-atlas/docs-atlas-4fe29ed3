@@ -1,0 +1,400 @@
+---
+title: Creating Campaigns
+description: Learn how to create and manage telemarketing campaigns in TelemanAI
+icon: 'bullhorn'
+---
+
+Campaigns in TelemanAI allow you to automate outbound calling to groups of contacts. This guide walks you through creating, configuring, and launching campaigns.
+
+## Prerequisites
+
+Before creating a campaign, ensure you have:
+
+- At least one contact group with contacts
+- A configured Twilio provider with sufficient balance
+- Audio files or text-to-speech content prepared
+- Verified KYC status (if required)
+
+## Creating a New Campaign
+
+<Steps>
+  <Step title="Navigate to Campaigns">
+    From your dashboard, go to **Dashboard → Campaigns** to access the campaigns page.
+  </Step>
+
+  <Step title="Click Create Campaign">
+    Click the **Add New** or **Create Campaign** button to open the campaign creation form.
+  </Step>
+
+  <Step title="Enter Basic Information">
+    Fill in the required campaign details:
+
+    - **Name**: A descriptive name for your campaign (required)
+    - **Description**: Detailed description of the campaign purpose (required)
+
+    <Tip>
+      Use clear, descriptive names like "Q1 Product Launch - Existing Customers" to easily identify campaigns later.
+    </Tip>
+  </Step>
+
+  <Step title="Select Contact Group">
+    Choose which contact group to target:
+
+    - Click the **Group** dropdown
+    - Select the contact group you want to call
+    - Ensure the group has contacts assigned
+
+    <Warning>
+      Campaigns cannot be started without a contact group. Make sure your group contains valid phone numbers.
+    </Warning>
+  </Step>
+
+  <Step title="Select Provider">
+    Choose your Twilio provider:
+
+    - Select from your configured providers in the **Provider** dropdown
+    - Verify the provider has sufficient balance
+    - Ensure the provider connection is active
+
+    <Tip>
+      The provider determines which Twilio phone number will be used for outbound calls.
+    </Tip>
+  </Step>
+
+  <Step title="Configure Voice Content">
+    Choose how to deliver your message:
+
+    ### Option 1: Text-to-Speech
+    - Enter your message in the **Say** field
+    - The system will convert text to speech during calls
+    - Best for simple, dynamic messages
+
+    ### Option 2: Audio File Upload
+    - Click **Choose File** under Audio
+    - Upload an MP3 or WAV file
+    - Recommended for professional recordings
+
+    ### Option 3: Audio URL
+    - Enter a direct URL to an audio file
+    - Useful for remotely hosted audio content
+
+    <Note>
+      If both text and audio are provided, the audio file takes priority.
+    </Note>
+  </Step>
+
+  <Step title="Set Expectations (Optional)">
+    In the **Expectations** field, you can define:
+
+    - Expected call outcomes
+    - Lead qualification criteria
+    - Instructions for voice campaign tracking
+  </Step>
+
+  <Step title="Set Campaign Status">
+    Toggle the **Active** switch:
+
+    - **On**: Campaign is active and can be started
+    - **Off**: Campaign is inactive (saved as draft)
+  </Step>
+
+  <Step title="Save Campaign">
+    Click **Save** to create your campaign. You'll receive a success notification.
+  </Step>
+</Steps>
+
+## Configuring Campaign Audio
+
+### Uploading Audio Files
+
+1. Prepare your audio file:
+   - Formats: MP3, WAV
+   - Recommended: 16-bit, 8kHz or 16kHz
+   - Keep messages under 60 seconds for best results
+
+2. Upload process:
+   - Click **Choose File** in the audio section
+   - Select your audio file
+   - The file will be uploaded to `/audio/` directory
+   - Full URL will be automatically generated
+
+### Using Text-to-Speech
+
+Enter your message in the **Say** field:
+
+```
+Hello, this is a message from [Your Company]. 
+We're calling to inform you about our special offer.
+Press 1 to speak with a representative, or press 2 to be removed from our list.
+```
+
+<Tip>
+  Use natural punctuation and spacing to control speech pacing and pauses.
+</Tip>
+
+## Scheduling Campaigns
+
+After creating a campaign, you can schedule it to run at specific times.
+
+<Steps>
+  <Step title="Edit Your Campaign">
+    Navigate to **Dashboard → Campaigns** and click on your campaign name.
+  </Step>
+
+  <Step title="Add Schedule">
+    Scroll to the **Schedule** section and click **Add Schedule**.
+  </Step>
+
+  <Step title="Select Date and Time">
+    - Choose future date and time
+    - You can add multiple schedules
+    - All schedules must be in the future
+
+    <Warning>
+      Past dates will be rejected. Ensure your timezone settings are correct.
+    </Warning>
+  </Step>
+
+  <Step title="Save Schedules">
+    Click **Save Schedules**. Each schedule will be created with status **PENDING**.
+  </Step>
+</Steps>
+
+### Managing Schedules
+
+- **View schedules**: See all scheduled executions on the campaign edit page
+- **Delete schedule**: Click the delete icon next to any schedule
+- **Schedule status**: Monitors change from PENDING → RUNNING → COMPLETED
+
+## Starting a Campaign
+
+<Warning>
+  Before starting a campaign, verify:
+  - Your account has sufficient balance
+  - The provider connection is working
+  - You have not exceeded hourly quota limits
+  - Contact group contains valid phone numbers
+</Warning>
+
+### Manual Start
+
+<Steps>
+  <Step title="Go to Campaign List">
+    Navigate to **Dashboard → Campaigns**
+  </Step>
+
+  <Step title="Start Campaign">
+    Click the **Start** button next to your campaign
+  </Step>
+
+  <Step title="Confirm Start">
+    The campaign will be queued and begin calling contacts immediately
+  </Step>
+</Steps>
+
+### Test Campaign
+
+Before launching to all contacts, test your campaign:
+
+<Steps>
+  <Step title="Navigate to Campaign">
+    Go to **Dashboard → Campaigns** and select your campaign
+  </Step>
+
+  <Step title="Click Test Call">
+    Click the **Test Call** or **Dev Make Call** button
+  </Step>
+
+  <Step title="Verify Test Call">
+    The system will call the first contact in your group. Verify:
+    - Audio quality
+    - Message content
+    - Call connection
+  </Step>
+</Steps>
+
+<Tip>
+  Create a test group with your own phone number for safe testing.
+</Tip>
+
+## Voice Campaign Mode
+
+Voice campaigns allow live agents to make calls with campaign tracking.
+
+<Steps>
+  <Step title="Access Voice Campaign">
+    Navigate to **Dashboard → Voice Campaign**
+  </Step>
+
+  <Step title="Select Campaign">
+    Choose your campaign from the list and click **Start**
+  </Step>
+
+  <Step title="Make Calls">
+    The dialer interface will open:
+    - Contact information displays automatically
+    - Click **Call** to connect
+    - Mark lead status during or after the call
+  </Step>
+
+  <Step title="Track Lead Status">
+    For each call, mark the outcome:
+    - Interested
+    - Not Interested
+    - Follow Up
+    - No Answer
+    - Invalid Number
+  </Step>
+</Steps>
+
+## Editing Campaigns
+
+<Steps>
+  <Step title="Navigate to Campaign">
+    Go to **Dashboard → Campaigns** and click on the campaign name
+  </Step>
+
+  <Step title="Modify Settings">
+    Update any campaign settings:
+    - Name and description
+    - Contact group
+    - Provider
+    - Audio content
+    - Schedules
+  </Step>
+
+  <Step title="Save Changes">
+    Click **Update** to save your changes
+  </Step>
+</Steps>
+
+<Note>
+  Changing the group or provider will update any pending scheduled campaigns.
+</Note>
+
+## Campaign Status and Monitoring
+
+### Campaign Status
+
+- **Active**: Campaign can be started
+- **Inactive**: Campaign is paused (draft mode)
+- **Running**: Campaign is currently executing
+- **Completed**: Campaign has finished
+
+### Monitoring Calls
+
+Track campaign progress:
+
+1. Navigate to **Dashboard → Leads**
+2. Click on your campaign to view:
+   - Total calls made
+   - Call outcomes
+   - Lead statuses
+   - Contact responses
+
+### Viewing Call History
+
+Access detailed call logs:
+
+1. Go to **Dashboard → Call History**
+2. Filter by campaign
+3. View individual call details:
+   - Call duration
+   - Call status
+   - Recording URL
+   - Cost per call
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Optimize Campaign Timing">
+    - Schedule campaigns during business hours (9 AM - 5 PM)
+    - Avoid holidays and weekends for B2B campaigns
+    - Consider time zones when targeting multiple regions
+    - Space out campaigns to avoid overwhelming contacts
+  </Accordion>
+
+  <Accordion title="Prepare Quality Audio">
+    - Use professional voice talent for recordings
+    - Keep messages concise (30-45 seconds)
+    - Include clear call-to-action
+    - Test audio on multiple devices
+    - Ensure compliance with telemarketing regulations
+  </Accordion>
+
+  <Accordion title="Manage Contact Groups">
+    - Segment contacts by demographics or interests
+    - Regularly clean contact lists (remove invalid numbers)
+    - Create test groups for campaign validation
+    - Update contact data after campaign completion
+  </Accordion>
+
+  <Accordion title="Monitor and Optimize">
+    - Review call outcomes regularly
+    - Track conversion rates by campaign
+    - A/B test different messages
+    - Adjust scheduling based on response rates
+    - Stay within hourly quota limits
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Campaign Won't Start
+
+<AccordionGroup>
+  <Accordion title="Insufficient Balance Error">
+    **Problem**: Error message "Insufficient balance"
+
+    **Solution**:
+    - Check your account balance in Dashboard
+    - Add funds via **Dashboard → Billing**
+    - Ensure balance covers estimated campaign cost
+  </Accordion>
+
+  <Accordion title="No Group or Provider Error">
+    **Problem**: "Campaign has no group or provider"
+
+    **Solution**:
+    - Edit campaign and select a contact group
+    - Choose an active provider
+    - Save changes and try again
+  </Accordion>
+
+  <Accordion title="Connection Failed Error">
+    **Problem**: "Connection Failed. Please contact administrator"
+
+    **Solution**:
+    - Verify provider credentials in **Dashboard → Providers**
+    - Test Twilio connection
+    - Check provider status is active
+    - Contact support if issue persists
+  </Accordion>
+
+  <Accordion title="Hourly Quota Exceeded">
+    **Problem**: "Hourly quota crossed"
+
+    **Solution**:
+    - Wait until next hour to resume
+    - Check quota limits in your package
+    - Upgrade package for higher limits
+    - Schedule campaigns to distribute load
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Managing Contacts" icon="address-book" href="/guides/managing-contacts">
+    Learn how to create and manage contact groups
+  </Card>
+  <Card title="Web Dialer" icon="phone" href="/guides/web-dialer">
+    Make calls through the browser-based dialer
+  </Card>
+  <Card title="SIP Trunk Setup" icon="network-wired" href="/guides/sip-trunk-setup">
+    Configure SIP trunks for calling
+  </Card>
+  <Card title="Campaign API" icon="code" href="/api/campaigns/overview">
+    Automate campaigns via API
+  </Card>
+</CardGroup>
