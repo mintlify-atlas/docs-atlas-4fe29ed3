@@ -1,0 +1,217 @@
+---
+title: Flutterwave
+description: Integrate Flutterwave payment gateway for African and global payments
+---
+
+## Overview
+
+Flutterwave provides payment processing for African currencies and international transactions. TelemanAI supports Flutterwave for subscription payments with support for multiple currencies.
+
+## Prerequisites
+
+- Flutterwave business account
+- API keys (Public and Secret)
+- Webhook secret hash
+
+## Configuration
+
+### Environment Variables
+
+Add these variables to your `.env` file:
+
+```bash
+# Flutterwave Configuration
+FLW_PUBLIC_KEY=FLWPUBK-your-public-key
+FLW_SECRET_KEY=FLWSECK-your-secret-key
+FLW_SECRET_HASH=your-webhook-secret
+FLW_CURRENCY=NGN
+FLUTTERWAVE=YES
+```
+
+<ParamField path="FLW_PUBLIC_KEY" type="string" required>
+  Your Flutterwave public key for client-side operations
+</ParamField>
+
+<ParamField path="FLW_SECRET_KEY" type="string" required>
+  Your Flutterwave secret key for server-side API calls
+</ParamField>
+
+<ParamField path="FLW_SECRET_HASH" type="string" required>
+  Secret hash for verifying webhook signatures
+</ParamField>
+
+<ParamField path="FLW_CURRENCY" type="string">
+  Default currency code (NGN, GHS, KES, UGX, ZAR, etc.)
+</ParamField>
+
+<ParamField path="FLUTTERWAVE" type="string">
+  Set to `YES` to enable, `NO` to disable
+</ParamField>
+
+## Supported Currencies
+
+Flutterwave supports multiple African and international currencies:
+
+- **NGN** - Nigerian Naira
+- **GHS** - Ghanaian Cedi
+- **KES** - Kenyan Shilling
+- **UGX** - Ugandan Shilling
+- **ZAR** - South African Rand
+- **USD** - US Dollar
+- **EUR** - Euro
+- **GBP** - British Pound
+
+## Setup Steps
+
+<Steps>
+  <Step title="Create Flutterwave Account">
+    Sign up at [flutterwave.com](https://flutterwave.com) and complete business verification.
+  </Step>
+  
+  <Step title="Get API Credentials">
+    Navigate to **Settings → API** in your Flutterwave dashboard to retrieve your keys.
+    
+    <Warning>
+      Use test keys for development. Switch to live keys only in production.
+    </Warning>
+  </Step>
+  
+  <Step title="Configure Environment">
+    Add the credentials to your `.env` file as shown above.
+  </Step>
+  
+  <Step title="Set Up Webhooks">
+    Configure webhook URL in Flutterwave dashboard:
+    
+    ```
+    https://your-domain.com/flutterwave/callback
+    ```
+    
+    Copy the webhook secret hash and add it to `FLW_SECRET_HASH`.
+  </Step>
+  
+  <Step title="Enable Gateway">
+    Set `FLUTTERWAVE=YES` and clear application cache:
+    
+    ```bash
+    php artisan config:clear
+    php artisan cache:clear
+    ```
+  </Step>
+  
+  <Step title="Test Payment">
+    Make a test payment using Flutterwave test cards:
+    
+    - **Card Number**: 5531886652142950
+    - **CVV**: 564
+    - **Expiry**: 09/32
+    - **PIN**: 3310
+    - **OTP**: 12345
+  </Step>
+</Steps>
+
+## Payment Flow
+
+1. User selects subscription package
+2. Chooses Flutterwave as payment method
+3. Redirected to Flutterwave payment page
+4. Completes payment with card/mobile money
+5. Redirected back to TelemanAI
+6. Webhook verifies payment
+7. Subscription activated
+
+## Webhook Configuration
+
+Flutterwave sends payment notifications to your webhook URL. The system automatically verifies webhook signatures using `FLW_SECRET_HASH`.
+
+### Webhook Events
+
+- `charge.completed` - Payment successful
+- `charge.failed` - Payment failed
+- `charge.pending` - Payment pending
+
+## Testing
+
+### Test Cards
+
+| Card Number | Type | CVV | PIN | OTP |
+|-------------|------|-----|-----|-----|
+| 5531886652142950 | Mastercard | 564 | 3310 | 12345 |
+| 4187427415564246 | Visa | 828 | 3310 | 12345 |
+
+### Test Mode
+
+Ensure you're using test keys during development:
+
+```bash
+FLW_PUBLIC_KEY=FLWPUBK_TEST-your-test-key
+FLW_SECRET_KEY=FLWSECK_TEST-your-test-key
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Payment fails immediately">
+    - Verify API keys are correct
+    - Check that `FLUTTERWAVE=YES` in .env
+    - Ensure currency code is supported
+    - Clear application cache
+  </Accordion>
+  
+  <Accordion title="Webhook not received">
+    - Verify webhook URL is accessible publicly
+    - Check webhook secret hash matches
+    - Review Flutterwave webhook logs
+    - Ensure HTTPS is enabled in production
+  </Accordion>
+  
+  <Accordion title="Currency mismatch error">
+    - Set `FLW_CURRENCY` to match your Flutterwave account
+    - Ensure package prices use the same currency
+    - Some currencies require account approval
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Warning>
+Never expose your secret key in client-side code or commit it to version control.
+</Warning>
+
+- Store keys in `.env` file
+- Use test keys for development
+- Verify webhook signatures
+- Enable HTTPS in production
+- Regularly rotate API keys
+- Monitor transactions for fraud
+
+## Mobile Money Support
+
+Flutterwave supports mobile money payments in supported countries:
+
+- **M-Pesa** (Kenya)
+- **Ghana Mobile Money**
+- **Uganda Mobile Money**
+- **Zambia Mobile Money**
+
+Mobile money is automatically available when configured with the appropriate currency.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Payment Overview" icon="credit-card" href="/integrations/payment-overview">
+    View all payment gateways
+  </Card>
+  
+  <Card title="Subscription Packages" icon="box" href="/subscription/packages">
+    Configure pricing packages
+  </Card>
+  
+  <Card title="Payment Gateways" icon="wallet" href="/subscription/payment-gateways">
+    Learn about payment processing
+  </Card>
+  
+  <Card title="Stripe Integration" icon="stripe" href="/integrations/stripe">
+    Alternative payment gateway
+  </Card>
+</CardGroup>

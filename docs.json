@@ -89,6 +89,7 @@
             "group": "Subscriptions",
             "pages": [
               "api/subscriptions/check-expiry",
+              "api/subscriptions/subscription-data",
               "api/subscriptions/usage-limits"
             ]
           }
@@ -113,7 +114,11 @@
               "integrations/payment-overview",
               "integrations/stripe",
               "integrations/paypal",
-              "integrations/razorpay"
+              "integrations/razorpay",
+              "integrations/flutterwave",
+              "integrations/paystack",
+              "integrations/instamojo",
+              "integrations/mollie"
             ]
           }
         ]

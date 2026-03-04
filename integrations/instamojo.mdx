@@ -1,0 +1,211 @@
+---
+title: Instamojo
+description: Integrate Instamojo payment gateway for Indian payments
+---
+
+## Overview
+
+Instamojo is a payment gateway designed for Indian businesses, supporting UPI, cards, net banking, and wallets. TelemanAI integrates with Instamojo for INR transactions.
+
+## Prerequisites
+
+- Instamojo business account
+- KYC verification completed
+- API credentials (API Key and Auth Token)
+- Indian bank account
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Instamojo Configuration
+IM_API_KEY=your_api_key
+IM_AUTH_TOKEN=your_auth_token
+IM_URL=https://www.instamojo.com/api/1.1/
+INSTAMOJO=YES
+```
+
+<ParamField path="IM_API_KEY" type="string" required>
+  Your Instamojo API Key
+</ParamField>
+
+<ParamField path="IM_AUTH_TOKEN" type="string" required>
+  Your Instamojo Auth Token
+</ParamField>
+
+<ParamField path="IM_URL" type="string">
+  API endpoint URL
+  - Test: https://test.instamojo.com/api/1.1/
+  - Live: https://www.instamojo.com/api/1.1/
+</ParamField>
+
+<ParamField path="INSTAMOJO" type="string">
+  Set to `YES` to enable, `NO` to disable
+</ParamField>
+
+## Setup Steps
+
+<Steps>
+  <Step title="Create Instamojo Account">
+    Register at [instamojo.com](https://www.instamojo.com) and complete KYC.
+  </Step>
+  
+  <Step title="Get API Credentials">
+    Navigate to **Settings → API & Plugins** to generate:
+    - API Key
+    - Auth Token
+    
+    <Info>
+      Use test credentials during development.
+    </Info>
+  </Step>
+  
+  <Step title="Configure Environment">
+    Add credentials to `.env` file.
+  </Step>
+  
+  <Step title="Set Up Webhook">
+    Configure webhook URL:
+    ```
+    https://your-domain.com/instamojo/webhook
+    ```
+  </Step>
+  
+  <Step title="Enable Gateway">
+    ```bash
+    INSTAMOJO=YES
+    ```
+    
+    Clear cache:
+    ```bash
+    php artisan config:clear
+    ```
+  </Step>
+</Steps>
+
+## Supported Payment Methods
+
+Instamojo supports all major Indian payment methods:
+
+- **UPI** - Google Pay, PhonePe, Paytm, BHIM
+- **Cards** - Visa, Mastercard, RuPay, American Express
+- **Net Banking** - All major Indian banks
+- **Wallets** - Paytm, Mobikwik, Freecharge, Airtel Money
+- **EMI** - Credit card EMI options
+
+## Currency
+
+Instamojo only supports **INR (Indian Rupee)** transactions.
+
+## Testing
+
+### Test Environment
+
+Use test credentials for development:
+
+```bash
+IM_API_KEY=test_your_api_key
+IM_AUTH_TOKEN=test_your_auth_token  
+IM_URL=https://test.instamojo.com/api/1.1/
+```
+
+### Test Payments
+
+In test mode:
+- All payments auto-succeed
+- No real money is charged
+- Test all payment methods
+
+<Warning>
+Switch to live credentials only after thorough testing.
+</Warning>
+
+## Payment Flow
+
+1. User selects subscription package
+2. Clicks Pay with Instamojo
+3. Redirected to Instamojo payment page
+4. Chooses payment method (UPI/Card/Net Banking)
+5. Completes payment
+6. Redirected back to TelemanAI
+7. Webhook confirms payment
+8. Subscription activated
+
+## Webhook Configuration
+
+Instamojo sends payment notifications via webhook:
+
+### Webhook URL
+```
+https://your-domain.com/instamojo/webhook
+```
+
+### Webhook Events
+- `Payment successful` - Payment completed
+- `Payment pending` - Payment in progress
+- `Payment failed` - Payment unsuccessful
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Invalid credentials error">
+    - Verify API Key and Auth Token
+    - Check if using correct environment (test/live)
+    - Ensure KYC is approved
+    - Try regenerating credentials
+  </Accordion>
+  
+  <Accordion title="Payment page not loading">
+    - Check `IM_URL` is correct
+    - Verify `INSTAMOJO=YES`
+    - Clear application cache
+    - Check internet connectivity
+  </Accordion>
+  
+  <Accordion title="Webhook not received">
+    - Verify webhook URL is publicly accessible
+    - Check webhook configuration in dashboard
+    - Test webhook using Instamojo test panel
+    - Ensure HTTPS is enabled
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+- Never expose API credentials in code
+- Store credentials in `.env` only
+- Use HTTPS for production
+- Validate webhook payloads
+- Monitor transactions regularly
+- Set up fraud alerts
+
+## Fees
+
+Instamojo charges transaction fees:
+- **UPI**: ₹3 per transaction
+- **Credit/Debit Cards**: 2% + GST
+- **Net Banking**: ₹10 per transaction
+- **Wallets**: 2% + GST
+
+Check current fees on [Instamojo pricing page](https://www.instamojo.com/pricing/).
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Razorpay" icon="credit-card" href="/integrations/razorpay">
+    Alternative Indian payment gateway
+  </Card>
+  
+  <Card title="Payment Overview" icon="wallet" href="/integrations/payment-overview">
+    Compare payment gateways
+  </Card>
+  
+  <Card title="Packages" icon="box" href="/subscription/packages">
+    Set up pricing packages
+  </Card>
+  
+  <Card title="Payment Settings" icon="gear" href="/subscription/payment-gateways">
+    Payment configuration guide
+  </Card>
+</CardGroup>

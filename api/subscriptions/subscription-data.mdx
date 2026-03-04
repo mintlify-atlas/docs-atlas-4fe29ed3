@@ -1,0 +1,414 @@
+---
+title: Subscription Data
+description: Retrieve subscription details, expiration dates, and user restrictions
+---
+
+## Overview
+
+These API endpoints provide access to subscription information including user data, expiration status, payment history, and access restrictions.
+
+## Authentication
+
+All subscription data endpoints use the `check.expiry` middleware which requires a valid `saas_key` parameter.
+
+<Info>
+  See [Authentication](/api/authentication) for details on SaaS Key authentication.
+</Info>
+
+---
+
+## Get User Subscription Data
+
+Retrieve complete subscription details for a user.
+
+```
+GET /api/user-subscription-data
+```
+
+### Request Parameters
+
+<ParamField query="saas_key" type="string" required>
+  SaaS authentication key matching the environment variable `SAAS_KEY`
+</ParamField>
+
+<ParamField query="domain" type="string" required>
+  Customer domain to retrieve subscription data for
+</ParamField>
+
+### Response
+
+<ResponseField name="user_id" type="integer">
+  Unique identifier for the user
+</ResponseField>
+
+<ResponseField name="subscription_id" type="integer">
+  Current subscription ID
+</ResponseField>
+
+<ResponseField name="package_id" type="integer">
+  Subscribed package identifier
+</ResponseField>
+
+<ResponseField name="package_name" type="string">
+  Name of the subscription package
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Subscription status (active, expired, suspended)
+</ResponseField>
+
+<ResponseField name="start_date" type="string">
+  Subscription start date (ISO 8601 format)
+</ResponseField>
+
+<ResponseField name="end_date" type="string">
+  Subscription expiration date (ISO 8601 format)
+</ResponseField>
+
+<ResponseField name="email_limit" type="integer">
+  Total email credits available
+</ResponseField>
+
+<ResponseField name="sms_limit" type="integer">
+  Total SMS credits available
+</ResponseField>
+
+<ResponseField name="call_credits" type="number">
+  Remaining call credits in currency
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash curl
+curl -X GET "https://your-domain.com/api/user-subscription-data?saas_key=YOUR_SAAS_KEY&domain=customer.com" \
+  -H "Accept: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://your-domain.com/api/user-subscription-data?' + new URLSearchParams({
+    saas_key: 'YOUR_SAAS_KEY',
+    domain: 'customer.com'
+  }),
+  {
+    headers: {
+      'Accept': 'application/json'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+```php PHP
+<?php
+$saasKey = 'YOUR_SAAS_KEY';
+$domain = 'customer.com';
+
+$url = "https://your-domain.com/api/user-subscription-data?saas_key={$saasKey}&domain={$domain}";
+
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => [
+        'header' => "Accept: application/json\r\n"
+    ]
+]));
+
+$data = json_decode($response, true);
+print_r($data);
+```
+</CodeGroup>
+
+---
+
+## Get Subscription Expiration Date
+
+Calculate days remaining until subscription expiration.
+
+```
+GET /api/user-subscription-date-endin
+```
+
+### Request Parameters
+
+<ParamField query="saas_key" type="string" required>
+  SaaS authentication key
+</ParamField>
+
+<ParamField query="domain" type="string" required>
+  Customer domain
+</ParamField>
+
+### Response
+
+<ResponseField name="days_remaining" type="integer">
+  Number of days until subscription expires
+</ResponseField>
+
+<ResponseField name="expiration_date" type="string">
+  Subscription end date (ISO 8601 format)
+</ResponseField>
+
+<ResponseField name="is_expired" type="boolean">
+  Whether the subscription has already expired
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash curl
+curl -X GET "https://your-domain.com/api/user-subscription-date-endin?saas_key=YOUR_SAAS_KEY&domain=customer.com" \
+  -H "Accept: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://your-domain.com/api/user-subscription-date-endin?' + new URLSearchParams({
+    saas_key: 'YOUR_SAAS_KEY',
+    domain: 'customer.com'
+  })
+);
+
+const data = await response.json();
+console.log(`Days remaining: ${data.days_remaining}`);
+```
+</CodeGroup>
+
+---
+
+## Get Payment History
+
+Retrieve payment transaction history for a user.
+
+```
+GET /api/payment-histories
+```
+
+### Request Parameters
+
+<ParamField query="saas_key" type="string" required>
+  SaaS authentication key
+</ParamField>
+
+<ParamField query="domain" type="string" required>
+  Customer domain
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Number of records to return (default: 10, max: 100)
+</ParamField>
+
+<ParamField query="offset" type="integer">
+  Pagination offset (default: 0)
+</ParamField>
+
+### Response
+
+Returns an array of payment history objects:
+
+<ResponseField name="id" type="integer">
+  Payment record ID
+</ResponseField>
+
+<ResponseField name="user_id" type="integer">
+  User who made the payment
+</ResponseField>
+
+<ResponseField name="package_id" type="integer">
+  Package purchased
+</ResponseField>
+
+<ResponseField name="amount" type="number">
+  Payment amount
+</ResponseField>
+
+<ResponseField name="currency" type="string">
+  Payment currency code (USD, EUR, etc.)
+</ResponseField>
+
+<ResponseField name="payment_method" type="string">
+  Gateway used (stripe, paypal, razorpay, etc.)
+</ResponseField>
+
+<ResponseField name="transaction_id" type="string">
+  Gateway transaction identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Payment status (completed, pending, failed)
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Payment timestamp (ISO 8601 format)
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash curl
+curl -X GET "https://your-domain.com/api/payment-histories?saas_key=YOUR_SAAS_KEY&domain=customer.com&limit=20" \
+  -H "Accept: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://your-domain.com/api/payment-histories?' + new URLSearchParams({
+    saas_key: 'YOUR_SAAS_KEY',
+    domain: 'customer.com',
+    limit: '20'
+  })
+);
+
+const payments = await response.json();
+payments.forEach(payment => {
+  console.log(`${payment.created_at}: ${payment.amount} ${payment.currency}`);
+});
+```
+</CodeGroup>
+
+---
+
+## Check User Restrictions
+
+Verify if a user has any access restrictions due to subscription status.
+
+```
+GET /api/user-restriction
+```
+
+### Request Parameters
+
+<ParamField query="saas_key" type="string" required>
+  SaaS authentication key
+</ParamField>
+
+<ParamField query="domain" type="string" required>
+  Customer domain
+</ParamField>
+
+### Response
+
+<ResponseField name="restricted" type="boolean">
+  Whether the user has restrictions
+</ResponseField>
+
+<ResponseField name="reason" type="string">
+  Restriction reason (expired, suspended, payment_failed, etc.)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable restriction message
+</ResponseField>
+
+<ResponseField name="restricted_features" type="array">
+  List of features the user cannot access
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash curl
+curl -X GET "https://your-domain.com/api/user-restriction?saas_key=YOUR_SAAS_KEY&domain=customer.com" \
+  -H "Accept: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://your-domain.com/api/user-restriction?' + new URLSearchParams({
+    saas_key: 'YOUR_SAAS_KEY',
+    domain: 'customer.com'
+  })
+);
+
+const restriction = await response.json();
+if (restriction.restricted) {
+  console.log(`User restricted: ${restriction.reason}`);
+}
+```
+</CodeGroup>
+
+---
+
+## Error Responses
+
+All endpoints return standard error responses:
+
+<ResponseField name="error" type="string">
+  Error message
+</ResponseField>
+
+<ResponseField name="code" type="string">
+  Error code (INVALID_SAAS_KEY, USER_NOT_FOUND, etc.)
+</ResponseField>
+
+### Common Error Codes
+
+| Code | Description |
+|------|-------------|
+| INVALID_SAAS_KEY | The provided SaaS key is invalid |
+| USER_NOT_FOUND | No user found for the specified domain |
+| SUBSCRIPTION_NOT_FOUND | User has no active subscription |
+| INVALID_DOMAIN | Domain format is invalid |
+
+## Usage Example
+
+Here's a complete workflow for checking subscription status:
+
+```javascript
+async function checkSubscriptionStatus(domain) {
+  const saasKey = 'YOUR_SAAS_KEY';
+  const baseUrl = 'https://your-domain.com/api';
+  
+  // 1. Check if subscription has expired
+  const expiryResponse = await fetch(
+    `${baseUrl}/check-expiry?saas_key=${saasKey}&domain=${domain}`
+  );
+  const expiry = await expiryResponse.json();
+  
+  if (expiry.expired === 'YES') {
+    console.log('Subscription expired');
+    return;
+  }
+  
+  // 2. Get subscription details
+  const dataResponse = await fetch(
+    `${baseUrl}/user-subscription-data?saas_key=${saasKey}&domain=${domain}`
+  );
+  const subscription = await dataResponse.json();
+  
+  console.log(`Package: ${subscription.package_name}`);
+  console.log(`Email credits: ${subscription.email_limit}`);
+  console.log(`SMS credits: ${subscription.sms_limit}`);
+  
+  // 3. Check for restrictions
+  const restrictionResponse = await fetch(
+    `${baseUrl}/user-restriction?saas_key=${saasKey}&domain=${domain}`
+  );
+  const restriction = await restrictionResponse.json();
+  
+  if (restriction.restricted) {
+    console.log(`Access restricted: ${restriction.reason}`);
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Usage Limits" icon="gauge" href="/api/subscriptions/usage-limits">
+    Check and manage email/SMS usage
+  </Card>
+  
+  <Card title="Check Expiry" icon="calendar-xmark" href="/api/subscriptions/check-expiry">
+    Verify subscription expiration
+  </Card>
+  
+  <Card title="Subscription Packages" icon="box" href="/subscription/packages">
+    Learn about available packages
+  </Card>
+  
+  <Card title="Payment Gateways" icon="credit-card" href="/subscription/payment-gateways">
+    Configure payment methods
+  </Card>
+</CardGroup>

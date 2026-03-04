@@ -1,0 +1,255 @@
+---
+title: Mollie
+description: Integrate Mollie payment gateway for European payments
+---
+
+## Overview
+
+Mollie is a European payment service provider supporting multiple payment methods including iDEAL, SEPA, credit cards, and digital wallets. TelemanAI integrates with Mollie for EUR transactions.
+
+## Prerequisites
+
+- Mollie business account
+- Verified European business
+- API key (Live or Test)
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Mollie Configuration
+MOLLIE_KEY=test_your_api_key
+MOLLIE_CURRENCY=EUR
+MOLLIE=YES
+```
+
+<ParamField path="MOLLIE_KEY" type="string" required>
+  Your Mollie API key (starts with test_ or live_)
+</ParamField>
+
+<ParamField path="MOLLIE_CURRENCY" type="string">
+  Currency code (EUR recommended for Europe)
+</ParamField>
+
+<ParamField path="MOLLIE" type="string">
+  Set to `YES` to enable, `NO` to disable
+</ParamField>
+
+## Supported Payment Methods
+
+Mollie supports all major European payment methods:
+
+### Bank Payments
+- **iDEAL** - Netherlands
+- **SEPA Direct Debit** - Europe-wide
+- **Bancontact** - Belgium
+- **Giropay** - Germany
+- **EPS** - Austria
+- **Przelewy24** - Poland
+
+### Card Payments
+- **Visa**
+- **Mastercard**
+- **American Express**
+- **Maestro**
+
+### Digital Wallets
+- **PayPal**
+- **Apple Pay**
+- **Google Pay**
+
+### Other Methods
+- **Klarna** - Buy now, pay later
+- **in3** - Pay in 3 installments
+- **Vouchers** - Gift cards
+
+## Setup Steps
+
+<Steps>
+  <Step title="Create Mollie Account">
+    Register at [mollie.com](https://www.mollie.com) and complete business verification.
+  </Step>
+  
+  <Step title="Get API Key">
+    Navigate to **Developers → API Keys** in your Mollie dashboard.
+    
+    <Info>
+      Start with a test key: `test_xxxxxxxxxxxxxxx`
+    </Info>
+  </Step>
+  
+  <Step title="Configure Environment">
+    Add your API key to `.env`:
+    ```bash
+    MOLLIE_KEY=test_your_key
+    MOLLIE=YES
+    ```
+  </Step>
+  
+  <Step title="Set Up Webhooks">
+    Add webhook URL in Mollie dashboard:
+    ```
+    https://your-domain.com/mollie/webhook
+    ```
+    
+    <Warning>
+      Webhook URL must be publicly accessible and use HTTPS.
+    </Warning>
+  </Step>
+  
+  <Step title="Enable Payment Methods">
+    In your Mollie dashboard, activate desired payment methods under **Settings → Website Profiles → Payment Methods**.
+  </Step>
+  
+  <Step title="Test Integration">
+    Clear cache and test a payment:
+    ```bash
+    php artisan config:clear
+    php artisan cache:clear
+    ```
+  </Step>
+</Steps>
+
+## Supported Currencies
+
+Mollie supports 40+ currencies, including:
+
+- **EUR** - Euro (recommended for Europe)
+- **USD** - US Dollar
+- **GBP** - British Pound
+- **CHF** - Swiss Franc
+- **DKK** - Danish Krone
+- **SEK** - Swedish Krona
+- **NOK** - Norwegian Krone
+- **PLN** - Polish Złoty
+
+## Testing
+
+### Test Mode
+
+Use test API key during development:
+
+```bash
+MOLLIE_KEY=test_dHar4XY7LxsDOtmnkVtjNVWXLSlXsM
+```
+
+### Test Payments
+
+In test mode, all payment methods are available without real transactions:
+
+- **iDEAL**: All banks available, payments auto-succeed
+- **Credit Card**: Use any valid card format
+- **PayPal**: Test sandbox account
+
+<Tip>
+Mollie provides detailed test documentation at [docs.mollie.com/overview/testing](https://docs.mollie.com/overview/testing)
+</Tip>
+
+## Payment Flow
+
+1. User selects subscription package
+2. Chooses Mollie as payment method
+3. Selects preferred payment method (iDEAL, card, etc.)
+4. Redirected to payment provider
+5. Completes payment
+6. Redirected back to TelemanAI
+7. Webhook confirms payment status
+8. Subscription activated
+
+## Webhook Configuration
+
+Mollie sends real-time payment status updates via webhooks.
+
+### Webhook URL
+```
+https://your-domain.com/mollie/webhook
+```
+
+### Payment Statuses
+
+| Status | Description |
+|--------|-------------|
+| `open` | Payment created, awaiting completion |
+| `pending` | Payment started, not yet confirmed |
+| `authorized` | Payment authorized (cards) |
+| `paid` | Payment successful |
+| `failed` | Payment failed |
+| `canceled` | Payment canceled by user |
+| `expired` | Payment expired |
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Invalid API key error">
+    - Verify API key is correct
+    - Check if using test key for test mode
+    - Ensure no extra spaces in .env
+    - Regenerate API key if necessary
+  </Accordion>
+  
+  <Accordion title="Payment method not available">
+    - Enable payment method in Mollie dashboard
+    - Check if method is supported in your country
+    - Verify business verification status
+    - Some methods require additional approval
+  </Accordion>
+  
+  <Accordion title="Webhook not triggered">
+    - Verify webhook URL is publicly accessible
+    - Check webhook URL uses HTTPS
+    - Test webhook using Mollie dashboard
+    - Review webhook logs in Mollie
+  </Accordion>
+  
+  <Accordion title="Currency not supported">
+    - Check if currency is enabled in your profile
+    - EUR is recommended for European customers
+    - Some payment methods only support EUR
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Warning>
+Protect your API keys. Never commit them to version control.
+</Warning>
+
+- Store API keys in `.env` only
+- Use test keys for development
+- Enable HTTPS for production
+- Validate webhook signatures
+- Monitor transactions for fraud
+- Set up balance alerts
+
+## Transaction Fees
+
+Mollie charges per transaction:
+
+- **European cards**: 0.29 EUR + 2.8%
+- **Non-European cards**: 0.29 EUR + 2.8%
+- **iDEAL**: 0.29 EUR
+- **PayPal**: 0.10 EUR + 3.4%
+- **Klarna**: 0.45 EUR + 3.3%
+
+Check current pricing at [mollie.com/pricing](https://www.mollie.com/pricing).
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Stripe" icon="stripe" href="/integrations/stripe">
+    Alternative European payment gateway
+  </Card>
+  
+  <Card title="Payment Overview" icon="credit-card" href="/integrations/payment-overview">
+    Compare all payment gateways
+  </Card>
+  
+  <Card title="Subscription Packages" icon="box" href="/subscription/packages">
+    Configure pricing
+  </Card>
+  
+  <Card title="PayPal" icon="paypal" href="/integrations/paypal">
+    Another payment option
+  </Card>
+</CardGroup>

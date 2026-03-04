@@ -1,0 +1,199 @@
+---
+title: Paystack
+description: Integrate Paystack payment gateway for African payments
+---
+
+## Overview
+
+Paystack is a payment gateway for African businesses, supporting card payments, mobile money, and bank transfers. TelemanAI integrates with Paystack for seamless subscription payments.
+
+## Prerequisites
+
+- Paystack business account
+- API keys (Public and Secret)
+- Verified business in Nigeria, Ghana, or South Africa
+
+## Configuration
+
+### Environment Variables
+
+Add these variables to your `.env` file:
+
+```bash
+# Paystack Configuration
+PAYSTACK_PUBLIC_KEY=pk_live_your_public_key
+PAYSTACK_SECRET_KEY=sk_live_your_secret_key
+PAYSTACK_PAYMENT_URL=https://api.paystack.co
+MERCHANT_EMAIL=your-email@domain.com
+MERCHANT_CURRENCY=NGN
+PAYSTACK=YES
+```
+
+<ParamField path="PAYSTACK_PUBLIC_KEY" type="string" required>
+  Your Paystack public key for initializing payments
+</ParamField>
+
+<ParamField path="PAYSTACK_SECRET_KEY" type="string" required>
+  Your Paystack secret key for API authentication
+</ParamField>
+
+<ParamField path="PAYSTACK_PAYMENT_URL" type="string">
+  API endpoint (default: https://api.paystack.co)
+</ParamField>
+
+<ParamField path="MERCHANT_EMAIL" type="string" required>
+  Your business email registered with Paystack
+</ParamField>
+
+<ParamField path="MERCHANT_CURRENCY" type="string">
+  Currency code: NGN (Nigeria), GHS (Ghana), ZAR (South Africa)
+</ParamField>
+
+<ParamField path="PAYSTACK" type="string">
+  Set to `YES` to enable, `NO` to disable
+</ParamField>
+
+## Supported Currencies
+
+- **NGN** - Nigerian Naira
+- **GHS** - Ghanaian Cedi  
+- **ZAR** - South African Rand
+- **USD** - US Dollar (for international cards)
+
+## Setup Steps
+
+<Steps>
+  <Step title="Create Paystack Account">
+    Register at [paystack.com](https://paystack.com) and complete KYC verification.
+  </Step>
+  
+  <Step title="Get API Keys">
+    Go to **Settings → API Keys & Webhooks** in your Paystack dashboard.
+    
+    <Warning>
+      Use test keys (pk_test_*, sk_test_*) during development.
+    </Warning>
+  </Step>
+  
+  <Step title="Configure Environment">
+    Add your Paystack credentials to `.env` as shown above.
+  </Step>
+  
+  <Step title="Set Up Webhooks">
+    Add webhook URL in Paystack dashboard:
+    
+    ```
+    https://your-domain.com/paystack/callback
+    ```
+  </Step>
+  
+  <Step title="Enable Gateway">
+    Set `PAYSTACK=YES` and restart your application:
+    
+    ```bash
+    php artisan config:clear
+    php artisan cache:clear
+    ```
+  </Step>
+  
+  <Step title="Test Payment">
+    Use Paystack test cards:
+    
+    - **Card**: 4084084084084081
+    - **CVV**: 408
+    - **Expiry**: Any future date
+    - **PIN**: 0000
+  </Step>
+</Steps>
+
+## Payment Methods
+
+Paystack supports multiple payment methods:
+
+- **Card Payments** - Visa, Mastercard, Verve
+- **Bank Transfer** - Direct bank transfers
+- **USSD** - Mobile banking codes
+- **QR Code** - Scan to pay
+- **Mobile Money** - MTN, Vodafone, Airtel
+
+## Testing
+
+### Test Cards
+
+| Card Number | Type | CVV | PIN | Result |
+|-------------|------|-----|-----|--------|
+| 4084084084084081 | Visa | 408 | 0000 | Success |
+| 5060666666666666666 | Verve | 123 | 0000 | Success |
+| 507850785078507812 | Verve | 884 | 0000 | Insufficient funds |
+
+### Test Mode Keys
+
+```bash
+PAYSTACK_PUBLIC_KEY=pk_test_your_test_key
+PAYSTACK_SECRET_KEY=sk_test_your_test_key
+```
+
+## Webhook Events
+
+Paystack sends webhook notifications for:
+
+- `charge.success` - Payment successful
+- `charge.failed` - Payment failed  
+- `subscription.create` - Recurring subscription created
+- `subscription.disable` - Subscription cancelled
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Payment initialization fails">
+    - Verify API keys are correct
+    - Check `PAYSTACK=YES` is set
+    - Ensure email matches Paystack account
+    - Clear config cache
+  </Accordion>
+  
+  <Accordion title="Webhook not working">
+    - Verify webhook URL is publicly accessible
+    - Check webhook secret is configured
+    - Test webhook using Paystack dashboard
+    - Enable HTTPS for production
+  </Accordion>
+  
+  <Accordion title="Currency not supported">
+    - Verify your Paystack account country
+    - NGN, GHS, ZAR only for local accounts
+    - USD requires international verification
+  </Accordion>
+</AccordionGroup>
+
+## Security
+
+<Warning>
+Never commit API keys to version control. Always use environment variables.
+</Warning>
+
+- Store keys securely in `.env`
+- Use HTTPS in production
+- Verify webhook signatures
+- Monitor for suspicious transactions
+- Implement rate limiting
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Flutterwave" icon="money-bill-wave" href="/integrations/flutterwave">
+    Alternative African payment gateway
+  </Card>
+  
+  <Card title="Payment Overview" icon="credit-card" href="/integrations/payment-overview">
+    Compare all payment gateways
+  </Card>
+  
+  <Card title="Subscription Setup" icon="box" href="/subscription/packages">
+    Configure pricing packages
+  </Card>
+  
+  <Card title="Stripe" icon="stripe" href="/integrations/stripe">
+    International payment option
+  </Card>
+</CardGroup>
